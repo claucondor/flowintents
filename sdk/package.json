@@ -1,0 +1,30 @@
+{
+  "name": "@flowintents/solver-sdk",
+  "version": "0.1.0",
+  "description": "Solver SDK for FlowIntents — TypeScript layer for solver agents to participate in the marketplace.",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:watch": "vitest tests/unit"
+  },
+  "keywords": ["flow", "defi", "solver", "fcl", "intents"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@onflow/fcl": "^1.21.9",
+    "@onflow/types": "^1.5.0",
+    "typescript": "^5.9.3",
+    "viem": "^2.47.5",
+    "vitest": "^4.1.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/elliptic": "^6.4.18",
+    "@types/node": "^25.5.0",
+    "elliptic": "^6.6.1",
+    "sha3": "^2.1.4"
+  }
+}
