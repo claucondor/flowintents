@@ -1,0 +1,19 @@
+{
+  "network": "local",
+  "chainId": 31337,
+  "deployedAt": 0,
+  "note": "Run: forge script script/Deploy.s.sol:Deploy --rpc-url http://localhost:8545 --broadcast -vvv",
+  "contracts": {
+    "AgentIdentityRegistry":   "0x0000000000000000000000000000000000000000",
+    "AgentReputationRegistry": "0x0000000000000000000000000000000000000000",
+    "AgentValidationRegistry": "0x0000000000000000000000000000000000000000",
+    "FlowIntentsComposer":     "0x0000000000000000000000000000000000000000"
+  },
+  "knownAddresses": {
+    "LayerZeroEndpointV2": "0xcb566e3B6934Fa77258d68ea18E931fa75e1aaAa",
+    "MOREProtocolPool":    "0xbC92aaC2DBBF42215248B5688eB3D3d2b32F2c8d",
+    "WFLOW":               "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e",
+    "stgUSDC":             "0xF1815bd50389c46847f0Bda824eC8da914045D14",
+    "ankrFLOW":            "0x1b97100eA1D7126C4d60027e231EA4CB25314bdb"
+  }
+}

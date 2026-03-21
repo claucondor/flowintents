@@ -1,0 +1,18 @@
+# Foundry build artifacts
+out/
+cache/
+
+# Dependencies (tracked via .gitmodules if needed, or reinstalled with forge install)
+lib/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Broadcast output (sensitive, contains private key usage)
+broadcast/
+
+# Coverage
+lcov.info
+coverage/

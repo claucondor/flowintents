@@ -1,0 +1,129 @@
+{
+  "networks": {
+    "emulator": "127.0.0.1:3569",
+    "testnet": "access.devnet.nodes.onflow.org:9000",
+    "mainnet": "access.mainnet.nodes.onflow.org:9000"
+  },
+  "accounts": {
+    "emulator-account": {
+      "address": "f8d6e0586b0a20c7",
+      "key": {
+        "type": "file",
+        "location": "emulator-account.pkey"
+      }
+    },
+    "testnet-account": {
+      "address": "Testnet account address here",
+      "key": {
+        "type": "file",
+        "location": "testnet-account.pkey"
+      }
+    }
+  },
+  "contracts": {
+    "IntentMarketplace": {
+      "source": "cadence/contracts/IntentMarketplace.cdc",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "testnet": "Testnet contract address here"
+      }
+    },
+    "SolverRegistry": {
+      "source": "cadence/contracts/SolverRegistry.cdc",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "testnet": "Testnet contract address here"
+      }
+    },
+    "BidManager": {
+      "source": "cadence/contracts/BidManager.cdc",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "testnet": "Testnet contract address here"
+      }
+    },
+    "IntentExecutor": {
+      "source": "cadence/contracts/IntentExecutor.cdc",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "testnet": "Testnet contract address here"
+      }
+    },
+    "ScheduledManager": {
+      "source": "cadence/contracts/ScheduledManager.cdc",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "testnet": "Testnet contract address here"
+      }
+    }
+  },
+  "deployments": {
+    "emulator": {
+      "emulator-account": [
+        "IntentMarketplace",
+        "SolverRegistry",
+        "BidManager",
+        "IntentExecutor",
+        "ScheduledManager"
+      ]
+    },
+    "testnet": {
+      "testnet-account": [
+        "IntentMarketplace",
+        "SolverRegistry",
+        "BidManager",
+        "IntentExecutor",
+        "ScheduledManager"
+      ]
+    }
+  },
+  "dependencies": {
+    "EVM": {
+      "source": {
+        "network": "emulator",
+        "address": "f8d6e0586b0a20c7",
+        "contract": "EVM"
+      },
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "testnet": "8c5303eaa26202d6",
+        "mainnet": "e467b9dd11fa00df"
+      }
+    },
+    "FungibleToken": {
+      "source": {
+        "network": "emulator",
+        "address": "ee82856bf20e2aa6",
+        "contract": "FungibleToken"
+      },
+      "aliases": {
+        "emulator": "ee82856bf20e2aa6",
+        "testnet": "9a0766d93b6608b7",
+        "mainnet": "f233dcee88fe0abe"
+      }
+    },
+    "FlowToken": {
+      "source": {
+        "network": "emulator",
+        "address": "0ae53cb6e3f42a79",
+        "contract": "FlowToken"
+      },
+      "aliases": {
+        "emulator": "0ae53cb6e3f42a79",
+        "testnet": "7e60df042a9c0868",
+        "mainnet": "1654653399040a61"
+      }
+    },
+    "FlowTransactionScheduler": {
+      "source": {
+        "network": "testnet",
+        "address": "8c5303eaa26202d6",
+        "contract": "FlowTransactionScheduler"
+      },
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "testnet": "8c5303eaa26202d6"
+      }
+    }
+  }
+}
