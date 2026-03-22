@@ -105,6 +105,30 @@ export class MCPClient {
   /** more__yield_opportunities — current yield pools on Flow */
   async getYieldOpportunities(): Promise<YieldOpportunity[]> {
     const data = await this.callTool('more__yield_opportunities', {})
+
+    // MCP returns: { opportunities: [{ symbol, supplyAPY, utilizationRate, ... }], ... }
+    // Normalize to YieldOpportunity[]
+    const raw = data as {
+      opportunities?: Array<{
+        symbol: string
+        supplyAPY: number
+        utilizationRate?: number
+        totalSupplyUSD?: number
+      }>
+    }
+
+    if (raw && Array.isArray(raw.opportunities)) {
+      return raw.opportunities.map((o) => ({
+        protocol: 'MORE Finance',
+        asset: o.symbol,
+        apy: o.supplyAPY,
+        tvl: o.totalSupplyUSD,
+        utilizationRate: o.utilizationRate,
+        chain: 'flow',
+      }))
+    }
+
+    // Fallback: data is already YieldOpportunity[]
     return data as YieldOpportunity[]
   }
 

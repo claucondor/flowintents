@@ -35,17 +35,20 @@ export class EventListener {
 
   /**
    * @param contractAddress  Cadence account that deployed IntentMarketplace (without 0x)
-   * @param accessNodeURL    FCL access node, e.g. "https://rest-mainnet.onflow.org"
+   *                         From cadence/scripts/deploy/addresses.json: "f8d6e0586b0a20c7"
+   * @param accessNodeURL    FCL access node — defaults to Flow emulator REST endpoint
    */
   constructor(
     contractAddress: string,
-    accessNodeURL = 'https://rest-mainnet.onflow.org',
+    accessNodeURL = 'http://localhost:8080',
   ) {
     this.contractAddress = contractAddress.replace(/^0x/, '')
     this.accessNodeURL = accessNodeURL
 
+    const isLocal = accessNodeURL.includes('localhost') || accessNodeURL.includes('127.0.0.1')
     fcl.config({
       'accessNode.api': accessNodeURL,
+      'flow.network': isLocal ? 'local' : 'mainnet',
     })
   }
 

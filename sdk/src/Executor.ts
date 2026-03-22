@@ -63,25 +63,49 @@ function buildAuthorization(
   }
 }
 
-// ---- Cadence transactions (inline) ----
-// In production these would live in cadence/transactions/*.cdc and be read from disk.
+// ---- Cadence contract addresses (from cadence/scripts/deploy/addresses.json) ----
 
+const CADENCE_ADDRESSES = {
+  IntentMarketplace: 'f8d6e0586b0a20c7',
+  SolverRegistry: 'f8d6e0586b0a20c7',
+  BidManager: 'f8d6e0586b0a20c7',
+  IntentExecutor: 'f8d6e0586b0a20c7',
+}
+
+// ---- Cadence transactions (inline) ----
+
+/**
+ * Updated submitBid transaction matching Sprint 2 Cadence signature:
+ *   intentID: UInt64
+ *   offeredAPY: UFix64?           (Yield / BridgeYield)
+ *   offeredAmountOut: UFix64?     (Swap)
+ *   encodedBatch: [UInt8]         (ABI-encoded BatchStep[])
+ *   solverEVMAddress: String
+ *   targetChain: String?
+ *   estimatedFeeBPS: UInt64?
+ */
 const SUBMIT_BID_CDC = `
-import IntentMarketplace from 0xINTENT_CONTRACT
-import BidManager from 0xBID_CONTRACT
+import IntentMarketplace from 0x${CADENCE_ADDRESSES.IntentMarketplace}
+import BidManager from 0x${CADENCE_ADDRESSES.BidManager}
 
 transaction(
-  intentId: UInt64,
-  offeredAPY: UFix64,
-  agentTokenId: UInt64,
-  encodedBatch: String
+  intentID: UInt64,
+  offeredAPY: UFix64?,
+  offeredAmountOut: UFix64?,
+  encodedBatch: [UInt8],
+  solverEVMAddress: String,
+  targetChain: String?,
+  estimatedFeeBPS: UInt64?
 ) {
-  prepare(signer: AuthAccount) {
+  prepare(signer: &Account) {
     BidManager.submitBid(
-      intentId: intentId,
+      intentID: intentID,
       offeredAPY: offeredAPY,
-      agentTokenId: agentTokenId,
+      offeredAmountOut: offeredAmountOut,
       encodedBatch: encodedBatch,
+      solverEVMAddress: solverEVMAddress,
+      targetChain: targetChain,
+      estimatedFeeBPS: estimatedFeeBPS,
       solver: signer.address
     )
   }
@@ -89,10 +113,10 @@ transaction(
 `
 
 const REGISTER_SOLVER_CDC = `
-import SolverRegistry from 0xSOLVER_CONTRACT
+import SolverRegistry from 0x${CADENCE_ADDRESSES.SolverRegistry}
 
 transaction(agentTokenId: UInt64, evmAddress: String) {
-  prepare(signer: AuthAccount) {
+  prepare(signer: &Account) {
     SolverRegistry.registerSolver(
       agentTokenId: agentTokenId,
       evmAddress: evmAddress,
@@ -112,11 +136,14 @@ export class Executor {
 
   constructor(config: SolverConfig) {
     this.config = config
+    // Use emulator RPC by default; override rpcUrl in config for mainnet
     this.erc8004 = new ERC8004Manager(config.evmPrivateKey)
     this.authz = buildAuthorization(config.flowAddress, config.flowPrivateKey)
 
+    // FCL configured for Flow emulator
     fcl.config({
-      'accessNode.api': 'https://rest-mainnet.onflow.org',
+      'accessNode.api': 'http://localhost:8080',
+      'flow.network': 'local',
     })
   }
 
@@ -134,11 +161,12 @@ export class Executor {
       )
     }
 
-    const tokenId =
-      this.config.agentTokenId ??
-      (await this.erc8004.getTokenId(this.config.evmAddress))
-
-    const bidArgs = strategyToBidArgs(intent.id, strategy, tokenId)
+    const bidArgs = strategyToBidArgs(
+      intent.id,
+      strategy,
+      this.config.agentTokenId ?? 0,
+      this.config.evmAddress,
+    )
 
     const txId: string = await fcl.mutate({
       cadence: SUBMIT_BID_CDC,

@@ -4,6 +4,17 @@
  * IMPORTANT: UFix64 in FCL MUST be a string with exactly 8 decimal places.
  * e.g.  8.0  →  "8.00000000"
  *       4.1  →  "4.10000000"
+ *
+ * Updated Cadence submitBid signature (Sprint 2):
+ *   transaction(
+ *     intentID: UInt64,
+ *     offeredAPY: UFix64?,          // Yield / BridgeYield intents
+ *     offeredAmountOut: UFix64?,    // Swap intents
+ *     encodedBatch: [UInt8],        // ABI-encoded BatchStep[] as byte array
+ *     solverEVMAddress: String,
+ *     targetChain: String?,
+ *     estimatedFeeBPS: UInt64?
+ *   )
  */
 
 import * as fcl from '@onflow/fcl'
@@ -13,12 +24,18 @@ import type { Strategy } from './types/Strategy'
 export interface BidArgs {
   /** The intent ID (UInt64 → string) */
   intentId: string
-  /** Offered APY as UFix64 string, e.g. "8.00000000" */
-  offeredAPY: string
-  /** Solver's ERC-8004 agent token ID (UInt64 → string) */
-  agentTokenId: string
-  /** ABI-encoded BatchStep[] as hex string (without 0x) */
-  encodedBatch: string
+  /** Offered APY as UFix64 string (for Yield/BridgeYield), e.g. "8.00000000". Null for Swap. */
+  offeredAPY: string | null
+  /** Offered amount out as UFix64 string (for Swap). Null for Yield. */
+  offeredAmountOut: string | null
+  /** ABI-encoded BatchStep[] as array of byte values (UInt8[]) */
+  encodedBatch: number[]
+  /** Solver's EVM address (0x-prefixed) */
+  solverEVMAddress: string
+  /** Target chain identifier (e.g. "ethereum", "base"), null for Flow-native */
+  targetChain: string | null
+  /** Estimated fee in basis points (UInt64), null if not applicable */
+  estimatedFeeBPS: string | null
 }
 
 /**
@@ -36,38 +53,64 @@ export function toUFix64(value: number | string): string {
 }
 
 /**
+ * Converts a Uint8Array / Buffer (ABI-encoded batch) into a number[] for Cadence [UInt8].
+ */
+export function encodedBatchToUInt8Array(batch: Uint8Array): number[] {
+  return Array.from(batch)
+}
+
+/**
  * Builds the FCL transaction argument array for submitBid.cdc.
  *
- * Expected Cadence transaction signature:
- *   transaction(
- *     intentId: UInt64,
- *     offeredAPY: UFix64,
- *     agentTokenId: UInt64,
- *     encodedBatch: String
- *   )
+ * Maps the BidArgs to the updated Cadence transaction signature with:
+ *   - Optional UFix64 fields (offeredAPY, offeredAmountOut) using t.Optional(t.UFix64)
+ *   - encodedBatch as [UInt8] (array of UInt8)
+ *   - solverEVMAddress as String
+ *   - Optional targetChain and estimatedFeeBPS
  */
 export function buildBidArgs(args: BidArgs): ReturnType<typeof fcl.arg>[] {
   return [
     fcl.arg(args.intentId, t.UInt64),
-    fcl.arg(toUFix64(args.offeredAPY), t.UFix64),
-    fcl.arg(args.agentTokenId, t.UInt64),
-    fcl.arg(args.encodedBatch, t.String),
+    fcl.arg(
+      args.offeredAPY !== null ? toUFix64(args.offeredAPY) : null,
+      t.Optional(t.UFix64),
+    ),
+    fcl.arg(
+      args.offeredAmountOut !== null ? toUFix64(args.offeredAmountOut) : null,
+      t.Optional(t.UFix64),
+    ),
+    fcl.arg(
+      args.encodedBatch.map((b) => b.toString()),
+      t.Array(t.UInt8),
+    ),
+    fcl.arg(args.solverEVMAddress, t.String),
+    fcl.arg(args.targetChain ?? null, t.Optional(t.String)),
+    fcl.arg(args.estimatedFeeBPS ?? null, t.Optional(t.UInt64)),
   ]
 }
 
 /**
  * Derives bid arguments from an Intent ID and a resolved Strategy.
+ * Assumes a Yield-type intent (sets offeredAPY, leaves offeredAmountOut null).
  */
 export function strategyToBidArgs(
   intentId: string,
   strategy: Strategy,
   agentTokenId: number,
+  solverEVMAddress = '0x0000000000000000000000000000000000000000',
 ): BidArgs {
-  const encodedBatch = Buffer.from(strategy.encodedBatch).toString('hex')
+  // agentTokenId kept for backwards compatibility but not sent in new signature
+  void agentTokenId
+
+  const encodedBatch = encodedBatchToUInt8Array(strategy.encodedBatch)
+
   return {
     intentId,
     offeredAPY: toUFix64(strategy.expectedAPY),
-    agentTokenId: agentTokenId.toString(),
+    offeredAmountOut: null,
     encodedBatch,
+    solverEVMAddress,
+    targetChain: strategy.chain !== 'flow' ? strategy.chain : null,
+    estimatedFeeBPS: null,
   }
 }

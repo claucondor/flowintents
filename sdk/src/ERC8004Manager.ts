@@ -24,7 +24,9 @@ import {
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 
-// ---- Flow EVM chain definition ----
+// ---- Flow EVM chain definitions ----
+
+/** Flow EVM Mainnet (chainId 747) */
 export const flowEvmMainnet = defineChain({
   id: 747,
   name: 'Flow EVM Mainnet',
@@ -40,6 +42,22 @@ export const flowEvmMainnet = defineChain({
   },
   blockExplorers: {
     default: { name: 'Flowscan', url: 'https://evm.flowscan.io' },
+  },
+})
+
+/** Flow EVM Emulator (chainId 646) */
+export const flowEvmEmulator = defineChain({
+  id: 646,
+  name: 'Flow EVM Emulator',
+  network: 'flow-evm-emulator',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Flow',
+    symbol: 'FLOW',
+  },
+  rpcUrls: {
+    default: { http: ['http://localhost:8545'] },
+    public: { http: ['http://localhost:8545'] },
   },
 })
 
@@ -68,18 +86,25 @@ const ERC8004_REPUTATION_ABI = parseAbi([
 ])
 
 /**
- * Address of the ERC-8004 AgentIdentityRegistry on Flow EVM mainnet.
- * Replace with the actual deployed contract address from evm-core.
- * See sdk/PENDING.md for details.
+ * Deployed addresses from evm/deployments/local.json (Flow EVM emulator, chainId 646).
+ * These are also used as the canonical addresses for integration tests.
  */
-const ERC8004_IDENTITY_CONTRACT = '0x0000000000000000000000000000000000000000' as `0x${string}`
+const LOCAL_DEPLOYMENTS = {
+  AgentIdentityRegistry: '0xd21eddba9021b5113cf4bd089f7357be2270c41c' as `0x${string}`,
+  AgentReputationRegistry: '0x6bd0374c8d0b5def1fcac93d6e1937f83898f7d0' as `0x${string}`,
+}
 
 /**
- * Address of the ERC-8004 AgentReputationRegistry on Flow EVM mainnet.
- * Replace with the actual deployed contract address from evm-core.
- * See sdk/PENDING.md for details.
+ * Address of the ERC-8004 AgentIdentityRegistry.
+ * Defaults to the emulator-deployed address from evm/deployments/local.json.
  */
-const ERC8004_REPUTATION_CONTRACT = '0x0000000000000000000000000000000000000000' as `0x${string}`
+const ERC8004_IDENTITY_CONTRACT = LOCAL_DEPLOYMENTS.AgentIdentityRegistry
+
+/**
+ * Address of the ERC-8004 AgentReputationRegistry.
+ * Defaults to the emulator-deployed address from evm/deployments/local.json.
+ */
+const ERC8004_REPUTATION_CONTRACT = LOCAL_DEPLOYMENTS.AgentReputationRegistry
 
 /**
  * Convert a plain role string (e.g. "SOLVER") to the bytes32 agentType
@@ -101,10 +126,15 @@ export class ERC8004Manager {
     rpcUrl?: string,
     reputationContractAddress: `0x${string}` = ERC8004_REPUTATION_CONTRACT,
   ) {
-    const transport = http(rpcUrl ?? 'https://mainnet.evm.nodes.onflow.org')
+    // Default to emulator RPC (localhost:8545); override for mainnet/testnet.
+    const resolvedRpcUrl = rpcUrl ?? 'http://localhost:8545'
+    const transport = http(resolvedRpcUrl)
+
+    // Use emulator chain when on localhost, mainnet otherwise.
+    const chain = resolvedRpcUrl.includes('localhost') ? flowEvmEmulator : flowEvmMainnet
 
     this.publicClient = createPublicClient({
-      chain: flowEvmMainnet,
+      chain,
       transport,
     }) as PublicClient
 
@@ -114,7 +144,7 @@ export class ERC8004Manager {
       )
       this.walletClient = createWalletClient({
         account,
-        chain: flowEvmMainnet,
+        chain,
         transport,
       })
     }

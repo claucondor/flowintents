@@ -22,12 +22,17 @@ const FALLBACK_CROSS_CHAIN_YIELDS: CrossChainYield[] = [
 // Minimum cross-chain APY premium to recommend cross-chain over Flow
 const CROSS_CHAIN_PREMIUM = 2.0
 
+// WFLOW contract on Flow EVM (emulator and mainnet)
+const WFLOW_ADDRESS = '0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e' as `0x${string}`
+// WFLOW.deposit() selector
+const WFLOW_DEPOSIT_SELECTOR = '0xd0e30db0' as `0x${string}`
+
 /**
  * ABI type for a single BatchStep:
- *   struct BatchStep { address target; bytes callData; uint256 value; }
+ *   struct BatchStep { address target; bytes callData; uint256 value; bool required; }
  */
 const BATCH_STEP_ABI = parseAbiParameters(
-  '(address target, bytes callData, uint256 value)[]',
+  '(address target, bytes callData, uint256 value, bool required)[]',
 )
 
 export class StrategyEngine {
@@ -102,21 +107,47 @@ export class StrategyEngine {
   }
 
   /**
-   * Encode a minimal BatchStep[] for a Flow-native yield deposit.
-   * In production this would call the specific protocol's deposit selector.
-   * Here we build a placeholder-but-valid ABI encoding so the type is satisfied.
+   * Encode a BatchStep[] for a Flow-native yield deposit.
+   *
+   * For WFLOW / ankrFLOW: encode as WFLOW.deposit() (selector 0xd0e30db0).
+   * The value will be filled at execution time from the intent principalAmount;
+   * here we encode 0 as the value placeholder since the Cadence executor sets it.
+   *
+   * For other Flow protocols (MORE Finance, etc.): use a placeholder step that
+   * passes the call data through to FlowIntentsComposer.
    */
   private _encodeFlowBatch(y: YieldOpportunity): Uint8Array {
-    const steps: BatchStep[] = [
-      {
-        // MORE Finance proxy or equivalent — placeholder address
-        target: '0x0000000000000000000000000000000000000001',
-        callData: '0x',
-        value: 0n,
-      },
-    ]
+    let steps: BatchStep[]
+
+    if (y.asset.toLowerCase().includes('flow') || y.protocol.toLowerCase().includes('ankr')) {
+      // WFLOW.deposit() — wraps FLOW into WFLOW for yield
+      steps = [
+        {
+          target: WFLOW_ADDRESS,
+          callData: WFLOW_DEPOSIT_SELECTOR,
+          value: 0n,
+          required: true,
+        },
+      ]
+    } else {
+      // Generic yield protocol deposit — placeholder; real selector added per protocol
+      steps = [
+        {
+          target: '0x0000000000000000000000000000000000000001',
+          callData: '0x',
+          value: 0n,
+          required: true,
+        },
+      ]
+    }
+
     const encoded = encodeAbiParameters(BATCH_STEP_ABI, [
-      steps.map((s) => ({ target: s.target as `0x${string}`, callData: s.callData, value: s.value })),
+      steps.map((s) => ({
+        target: s.target as `0x${string}`,
+        callData: s.callData,
+        value: s.value,
+        required: (s as BatchStep & { required?: boolean }).required ?? true,
+      })),
     ])
     return Buffer.from(encoded.slice(2), 'hex')
   }
@@ -124,14 +155,20 @@ export class StrategyEngine {
   private _encodeCrossChainBatch(cy: CrossChainYield): Uint8Array {
     const steps: BatchStep[] = [
       {
-        // Bridge contract placeholder
+        // Bridge contract placeholder — real address varies per destination
         target: '0x0000000000000000000000000000000000000002',
         callData: '0x',
         value: 0n,
+        required: true,
       },
     ]
     const encoded = encodeAbiParameters(BATCH_STEP_ABI, [
-      steps.map((s) => ({ target: s.target as `0x${string}`, callData: s.callData, value: s.value })),
+      steps.map((s) => ({
+        target: s.target as `0x${string}`,
+        callData: s.callData,
+        value: s.value,
+        required: (s as BatchStep & { required?: boolean }).required ?? true,
+      })),
     ])
     return Buffer.from(encoded.slice(2), 'hex')
   }

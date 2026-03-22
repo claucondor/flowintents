@@ -46,4 +46,5 @@ export interface BatchStep {
   target: string        // contract address
   callData: `0x${string}`
   value: bigint
+  required?: boolean    // whether step failure aborts the batch (default: true)
 }

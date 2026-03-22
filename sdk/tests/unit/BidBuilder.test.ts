@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toUFix64, buildBidArgs, strategyToBidArgs } from '../../src/BidBuilder'
+import { toUFix64, buildBidArgs, strategyToBidArgs, encodedBatchToUInt8Array } from '../../src/BidBuilder'
 import type { Strategy } from '../../src/types/Strategy'
 
 describe('toUFix64', () => {
@@ -28,6 +28,13 @@ describe('toUFix64', () => {
   })
 })
 
+describe('encodedBatchToUInt8Array', () => {
+  it('converts Uint8Array to number[]', () => {
+    const input = new Uint8Array([0xde, 0xad, 0xbe, 0xef])
+    expect(encodedBatchToUInt8Array(input)).toEqual([222, 173, 190, 239])
+  })
+})
+
 describe('strategyToBidArgs', () => {
   const mockStrategy: Strategy = {
     protocol: 'MORE Finance',
@@ -39,26 +46,44 @@ describe('strategyToBidArgs', () => {
   }
 
   it('builds bid args with correct UFix64 APY', () => {
-    const args = strategyToBidArgs('42', mockStrategy, 7)
+    const args = strategyToBidArgs('42', mockStrategy, 7, '0xSolverEVM')
     expect(args.offeredAPY).toBe('8.00000000')
     expect(args.intentId).toBe('42')
-    expect(args.agentTokenId).toBe('7')
   })
 
-  it('encodes batch as hex string', () => {
-    const args = strategyToBidArgs('1', mockStrategy, 1)
-    expect(args.encodedBatch).toBe('deadbeef')
+  it('encodes batch as number[]', () => {
+    const args = strategyToBidArgs('1', mockStrategy, 1, '0xSolverEVM')
+    expect(args.encodedBatch).toEqual([0xde, 0xad, 0xbe, 0xef])
+  })
+
+  it('sets offeredAmountOut to null for yield strategy', () => {
+    const args = strategyToBidArgs('1', mockStrategy, 1, '0xSolverEVM')
+    expect(args.offeredAmountOut).toBeNull()
+  })
+
+  it('sets targetChain to null for flow strategy', () => {
+    const args = strategyToBidArgs('1', mockStrategy, 1, '0xSolverEVM')
+    expect(args.targetChain).toBeNull()
+  })
+
+  it('sets targetChain for cross-chain strategy', () => {
+    const crossChainStrategy: Strategy = { ...mockStrategy, chain: 'ethereum' }
+    const args = strategyToBidArgs('1', crossChainStrategy, 1, '0xSolverEVM')
+    expect(args.targetChain).toBe('ethereum')
   })
 })
 
 describe('buildBidArgs', () => {
-  it('returns an array of 4 FCL args', () => {
+  it('returns an array of 7 FCL args matching updated submitBid signature', () => {
     const args = buildBidArgs({
       intentId: '1',
       offeredAPY: '8.00000000',
-      agentTokenId: '5',
-      encodedBatch: 'deadbeef',
+      offeredAmountOut: null,
+      encodedBatch: [0xde, 0xad, 0xbe, 0xef],
+      solverEVMAddress: '0xSolverEVM',
+      targetChain: null,
+      estimatedFeeBPS: null,
     })
-    expect(args).toHaveLength(4)
+    expect(args).toHaveLength(7)
   })
 })
