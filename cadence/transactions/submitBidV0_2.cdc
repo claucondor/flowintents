@@ -1,6 +1,6 @@
 /// submitBidV0_2.cdc
 /// Submits a solver bid for an open intent via BidManagerV0_2.
-/// Includes gas escrow fields: estimatedGas and solverFeeMargin.
+/// Includes gas escrow field: maxGasBid (the max gas escrow the solver requests from user).
 /// Signer must be a registered solver in SolverRegistry.
 
 import BidManagerV0_2 from "BidManagerV0_2"
@@ -11,8 +11,7 @@ transaction(
     offeredAmountOut: UFix64?,
     estimatedFeeBPS: UInt64?,
     targetChain: String?,
-    estimatedGas: UFix64,
-    solverFeeMargin: UFix64,
+    maxGasBid: UFix64,
     strategy: String,
     encodedBatch: [UInt8]
 ) {
@@ -30,8 +29,7 @@ transaction(
             offeredAmountOut: offeredAmountOut,
             estimatedFeeBPS: estimatedFeeBPS,
             targetChain: targetChain,
-            estimatedGas: estimatedGas,
-            solverFeeMargin: solverFeeMargin,
+            maxGasBid: maxGasBid,
             strategy: strategy,
             encodedBatch: encodedBatch
         )

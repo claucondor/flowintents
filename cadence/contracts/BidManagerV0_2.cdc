@@ -1,9 +1,11 @@
 /// BidManagerV0_2.cdc
 /// Manages the bidding competition between registered AI solver agents.
-/// Extends V0_1 with gas escrow fields: estimatedGas and solverFeeMargin.
+/// Gas escrow model: user deposits fixed gas budget, solver keeps ENTIRE escrow on execution.
+/// Solver profit = gasEscrow - actual gas cost (internal to solver).
 /// Scoring:
 ///   Combined score = (APY-based score * 0.7) + (gasEfficiencyScore * 0.3)
-///   gasEfficiencyScore = 1.0 / (estimatedGas + 0.001)
+///   gasEfficiencyScore = 1.0 / (maxGasBid + 0.001)
+///   Lower maxGasBid = higher score (solvers compete to request less from user)
 ///   Swap: score = (offeredAmountOut * reputationMultiplier * 0.7) + (gasEfficiencyScore * 0.3)
 /// Tie-breaking: earliest submittedAt wins.
 
@@ -24,8 +26,7 @@ access(all) contract BidManagerV0_2 {
         solverEVMAddress: String,
         offeredAPY: UFix64?,
         offeredAmountOut: UFix64?,
-        estimatedGas: UFix64,
-        solverFeeMargin: UFix64,
+        maxGasBid: UFix64,
         targetChain: String?,
         score: UFix64
     )
@@ -37,8 +38,7 @@ access(all) contract BidManagerV0_2 {
         solverEVMAddress: String,
         offeredAPY: UFix64?,
         offeredAmountOut: UFix64?,
-        estimatedGas: UFix64,
-        solverFeeMargin: UFix64,
+        maxGasBid: UFix64,
         score: UFix64
     )
 
@@ -63,8 +63,7 @@ access(all) contract BidManagerV0_2 {
         access(all) let targetChain: String?        // e.g. "ethereum", "base" (nil for Flow-native)
 
         // ---- V0_2 Gas Escrow Fields ----
-        access(all) let estimatedGas: UFix64        // FLOW solver declares needed for execution
-        access(all) let solverFeeMargin: UFix64     // solver's profit on top of gas cost
+        access(all) let maxGasBid: UFix64           // max gas escrow the solver requests from user
 
         /// JSON-encoded strategy description
         access(all) let strategy: String
@@ -83,8 +82,7 @@ access(all) contract BidManagerV0_2 {
             offeredAmountOut: UFix64?,
             estimatedFeeBPS: UInt64?,
             targetChain: String?,
-            estimatedGas: UFix64,
-            solverFeeMargin: UFix64,
+            maxGasBid: UFix64,
             strategy: String,
             encodedBatch: [UInt8],
             score: UFix64
@@ -97,8 +95,7 @@ access(all) contract BidManagerV0_2 {
             self.offeredAmountOut = offeredAmountOut
             self.estimatedFeeBPS = estimatedFeeBPS
             self.targetChain = targetChain
-            self.estimatedGas = estimatedGas
-            self.solverFeeMargin = solverFeeMargin
+            self.maxGasBid = maxGasBid
             self.strategy = strategy
             self.encodedBatch = encodedBatch
             self.submittedAt = getCurrentBlock().timestamp
@@ -136,16 +133,14 @@ access(all) contract BidManagerV0_2 {
         offeredAmountOut: UFix64?,
         estimatedFeeBPS: UInt64?,
         targetChain: String?,
-        estimatedGas: UFix64,
-        solverFeeMargin: UFix64,
+        maxGasBid: UFix64,
         strategy: String,
         encodedBatch: [UInt8]
     ): UInt64 {
         pre {
             encodedBatch.length > 0: "Encoded batch cannot be empty"
             strategy.length > 0:     "Strategy description required"
-            estimatedGas > 0.0:      "estimatedGas must be positive"
-            solverFeeMargin >= 0.0:  "solverFeeMargin cannot be negative"
+            maxGasBid > 0.0:         "maxGasBid must be positive"
         }
 
         // Verify solver is registered
@@ -190,9 +185,9 @@ access(all) contract BidManagerV0_2 {
         // Compute score: combined APY/amount score (70%) + gas efficiency (30%)
         let reputationMultiplier = SolverRegistryV0_1.getReputationMultiplier(cadenceAddress: solverAddress)
 
-        // Gas efficiency score: lower gas = higher score
-        // gasEfficiencyScore = 1.0 / (estimatedGas + 0.001)
-        let gasEfficiencyScore = 1.0 / (estimatedGas + 0.001)
+        // Gas efficiency score: lower maxGasBid = higher score (solvers compete to request less)
+        // gasEfficiencyScore = 1.0 / (maxGasBid + 0.001)
+        let gasEfficiencyScore = 1.0 / (maxGasBid + 0.001)
 
         var score: UFix64 = 0.0
         if intentType == IntentMarketplaceV0_2.IntentType.Swap {
@@ -217,8 +212,7 @@ access(all) contract BidManagerV0_2 {
             offeredAmountOut: offeredAmountOut,
             estimatedFeeBPS: estimatedFeeBPS,
             targetChain: targetChain,
-            estimatedGas: estimatedGas,
-            solverFeeMargin: solverFeeMargin,
+            maxGasBid: maxGasBid,
             strategy: strategy,
             encodedBatch: encodedBatch,
             score: score
@@ -242,8 +236,7 @@ access(all) contract BidManagerV0_2 {
             solverEVMAddress: solverEVMAddress,
             offeredAPY: offeredAPY,
             offeredAmountOut: offeredAmountOut,
-            estimatedGas: estimatedGas,
-            solverFeeMargin: solverFeeMargin,
+            maxGasBid: maxGasBid,
             targetChain: targetChain,
             score: score
         )
@@ -301,8 +294,7 @@ access(all) contract BidManagerV0_2 {
             solverEVMAddress: winningBid.solverEVMAddress,
             offeredAPY: winningBid.offeredAPY,
             offeredAmountOut: winningBid.offeredAmountOut,
-            estimatedGas: winningBid.estimatedGas,
-            solverFeeMargin: winningBid.solverFeeMargin,
+            maxGasBid: winningBid.maxGasBid,
             score: winningBid.score
         )
     }
