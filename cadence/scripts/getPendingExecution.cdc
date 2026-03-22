@@ -1,8 +1,8 @@
 /// getPendingExecution.cdc
 /// Returns all intents in BidSelected status that are awaiting execution by the winning solver.
 
-import IntentMarketplace from "IntentMarketplace"
-import BidManager from "BidManager"
+import IntentMarketplaceV0_1 from "IntentMarketplaceV0_1"
+import BidManagerV0_1 from "BidManagerV0_1"
 
 access(all) struct PendingExecutionView {
     access(all) let intentID: UInt64
@@ -36,11 +36,11 @@ access(all) fun main(): [PendingExecutionView] {
     var result: [PendingExecutionView] = []
     var i: UInt64 = 0
 
-    while i < IntentMarketplace.totalIntents {
-        if let intent = IntentMarketplace.getIntent(id: i) {
-            if intent.status == IntentMarketplace.IntentStatus.BidSelected {
+    while i < IntentMarketplaceV0_1.totalIntents {
+        if let intent = IntentMarketplaceV0_1.getIntent(id: i) {
+            if intent.status == IntentMarketplaceV0_1.IntentStatus.BidSelected {
                 if let winningBidID = intent.winningBidID {
-                    if let bid = BidManager.getBid(bidID: winningBidID) {
+                    if let bid = BidManagerV0_1.getBid(bidID: winningBidID) {
                         result.append(PendingExecutionView(
                             intentID: i,
                             owner: intent.owner,

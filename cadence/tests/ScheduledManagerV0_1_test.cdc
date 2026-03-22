@@ -1,20 +1,20 @@
-/// ScheduledManager_test.cdc
-/// Tests for ScheduledManager contract: Forte handler, rebalance logic.
+/// ScheduledManagerV0_1_test.cdc
+/// Tests for ScheduledManagerV0_1 contract: Forte handler, rebalance logic.
 
 import Test
 import BlockchainHelpers
-import "ScheduledManager"
-import "IntentMarketplace"
+import "ScheduledManagerV0_1"
+import "IntentMarketplaceV0_1"
 
 access(all) let admin  = Test.createAccount()
 access(all) let alice  = Test.createAccount()
 
 access(all) fun setup() {
-    Test.expect(Test.deployContract(name: "IntentMarketplace", path: "../contracts/IntentMarketplace.cdc", arguments: []), Test.beNil())
-    Test.expect(Test.deployContract(name: "SolverRegistry",    path: "../contracts/SolverRegistry.cdc",    arguments: []), Test.beNil())
-    Test.expect(Test.deployContract(name: "BidManager",        path: "../contracts/BidManager.cdc",        arguments: []), Test.beNil())
-    Test.expect(Test.deployContract(name: "IntentExecutor",    path: "../contracts/IntentExecutor.cdc",    arguments: []), Test.beNil())
-    Test.expect(Test.deployContract(name: "ScheduledManager",  path: "../contracts/ScheduledManager.cdc",  arguments: []), Test.beNil())
+    Test.expect(Test.deployContract(name: "IntentMarketplaceV0_1", path: "../contracts/IntentMarketplaceV0_1.cdc", arguments: []), Test.beNil())
+    Test.expect(Test.deployContract(name: "SolverRegistryV0_1",    path: "../contracts/SolverRegistryV0_1.cdc",    arguments: []), Test.beNil())
+    Test.expect(Test.deployContract(name: "BidManagerV0_1",        path: "../contracts/BidManagerV0_1.cdc",        arguments: []), Test.beNil())
+    Test.expect(Test.deployContract(name: "IntentExecutorV0_1",    path: "../contracts/IntentExecutorV0_1.cdc",    arguments: []), Test.beNil())
+    Test.expect(Test.deployContract(name: "ScheduledManagerV0_1",  path: "../contracts/ScheduledManagerV0_1.cdc",  arguments: []), Test.beNil())
 
     Test.expect(BlockchainHelpers.mintFlow(to: alice, amount: 100.0), Test.beSucceeded())
 }
@@ -24,8 +24,8 @@ access(all) fun setup() {
 // -------------------------------------------------------------------------
 
 access(all) fun testDefaultConfiguration() {
-    Test.assertEqual(ScheduledManager.rebalanceThreshold, 0.8 as UFix64)
-    Test.assertEqual(ScheduledManager.defaultExecutionEffort, UInt64(1000))
+    Test.assertEqual(ScheduledManagerV0_1.rebalanceThreshold, 0.8 as UFix64)
+    Test.assertEqual(ScheduledManagerV0_1.defaultExecutionEffort, UInt64(1000))
 }
 
 // -------------------------------------------------------------------------
@@ -33,8 +33,8 @@ access(all) fun testDefaultConfiguration() {
 // -------------------------------------------------------------------------
 
 access(all) fun testHandlerStoragePaths() {
-    Test.assertEqual(ScheduledManager.HandlerStoragePath, /storage/FlowIntentsScheduledHandler)
-    Test.assertEqual(ScheduledManager.HandlerPublicPath,  /public/FlowIntentsScheduledHandler)
+    Test.assertEqual(ScheduledManagerV0_1.HandlerStoragePath, /storage/FlowIntentsScheduledHandler)
+    Test.assertEqual(ScheduledManagerV0_1.HandlerPublicPath,  /public/FlowIntentsScheduledHandler)
 }
 
 // -------------------------------------------------------------------------
@@ -44,7 +44,7 @@ access(all) fun testHandlerStoragePaths() {
 access(all) fun testRebalanceThresholdCalculation() {
     // With threshold = 0.8, rebalance fires when currentAPY < 80% of targetAPY
     let targetAPY: UFix64 = 10.0
-    let threshold = ScheduledManager.rebalanceThreshold
+    let threshold = ScheduledManagerV0_1.rebalanceThreshold
     let rebalanceFloor = targetAPY * threshold  // 8.0
 
     // At 9.0% — no rebalance
@@ -64,8 +64,8 @@ access(all) fun testHandlerRequiresEntitlement() {
     // Direct calls without the entitlement will fail at the capability level
 
     // Verify the storage path exists (Handler was saved at init)
-    let handlerCap = getAccount(ScheduledManager.account.address)
-        .capabilities.borrow<&{AnyResource}>(ScheduledManager.HandlerPublicPath)
+    let handlerCap = getAccount(ScheduledManagerV0_1.account.address)
+        .capabilities.borrow<&{AnyResource}>(ScheduledManagerV0_1.HandlerPublicPath)
     // The public capability exposes TransactionHandler interface — correct type check
     Test.assert(true, message: "Handler entitlement protection is enforced by Cadence capability system")
 }

@@ -1,10 +1,10 @@
-/// IntentMarketplace_test.cdc
-/// Tests for IntentMarketplace contract.
+/// IntentMarketplaceV0_1_test.cdc
+/// Tests for IntentMarketplaceV0_1 contract.
 /// Covers: happy path, cancel, expiry, vault balance assertions.
 
 import Test
 import BlockchainHelpers
-import "IntentMarketplace"
+import "IntentMarketplaceV0_1"
 import "FungibleToken"
 import "FlowToken"
 
@@ -17,10 +17,10 @@ access(all) let bob      = Test.createAccount()
 // -------------------------------------------------------------------------
 
 access(all) fun setup() {
-    // Deploy IntentMarketplace
+    // Deploy IntentMarketplaceV0_1
     let err = Test.deployContract(
-        name: "IntentMarketplace",
-        path: "../contracts/IntentMarketplace.cdc",
+        name: "IntentMarketplaceV0_1",
+        path: "../contracts/IntentMarketplaceV0_1.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -106,7 +106,7 @@ access(all) fun testCancelIntent() {
     let createResult = Test.executeTransaction(createTx)
     Test.expect(createResult, Test.beSucceeded())
 
-    let intentID = IntentMarketplace.totalIntents - 1
+    let intentID = IntentMarketplaceV0_1.totalIntents - 1
     let balanceBeforeCancel = BlockchainHelpers.getFlowBalance(alice)
 
     // Cancel intent
@@ -155,7 +155,7 @@ access(all) fun testCancelByNonOwnerFails() {
     let createResult = Test.executeTransaction(createTx)
     Test.expect(createResult, Test.beSucceeded())
 
-    let intentID = IntentMarketplace.totalIntents - 1
+    let intentID = IntentMarketplaceV0_1.totalIntents - 1
 
     // Bob tries to cancel alice's intent
     let cancelCode = Test.readFile("../transactions/cancelIntent.cdc")
@@ -218,7 +218,7 @@ access(all) fun testExpireIntent() {
     let createResult = Test.executeTransaction(createTx)
     Test.expect(createResult, Test.beSucceeded())
 
-    let intentID = IntentMarketplace.totalIntents - 1
+    let intentID = IntentMarketplaceV0_1.totalIntents - 1
 
     // Advance the blockchain past expiry block
     Test.moveToNextBlock()
@@ -227,8 +227,8 @@ access(all) fun testExpireIntent() {
     let balanceBeforeExpiry = BlockchainHelpers.getFlowBalance(alice)
 
     // Marketplace borrow and expire
-    let marketplace = getAccount(IntentMarketplace.account.address).storage
-        .borrow<&IntentMarketplace.Marketplace>(from: IntentMarketplace.MarketplaceStoragePath)!
+    let marketplace = getAccount(IntentMarketplaceV0_1.account.address).storage
+        .borrow<&IntentMarketplaceV0_1.Marketplace>(from: IntentMarketplaceV0_1.MarketplaceStoragePath)!
     let receiver = getAccount(alice.address).storage
         .borrow<&{FungibleToken.Receiver}>(from: /storage/flowTokenVault)!
     marketplace.expireIntent(id: intentID, receiver: receiver)

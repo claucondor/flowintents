@@ -3,7 +3,7 @@
 /// The signer must own a COA and hold a valid AgentIdentityRegistry token.
 
 import EVM from "EVM"
-import SolverRegistry from "SolverRegistry"
+import SolverRegistryV0_1 from "SolverRegistryV0_1"
 
 transaction(evmAddress: String, tokenId: UInt256) {
     let coa: &EVM.CadenceOwnedAccount
@@ -19,7 +19,7 @@ transaction(evmAddress: String, tokenId: UInt256) {
     }
 
     execute {
-        SolverRegistry.registerSolverWithAddress(
+        SolverRegistryV0_1.registerSolverWithAddress(
             coa: self.coa,
             cadenceAddress: self.signerAddress,
             evmAddress: evmAddress,

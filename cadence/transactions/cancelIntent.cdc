@@ -3,18 +3,18 @@
 
 import FungibleToken from "FungibleToken"
 import FlowToken from "FlowToken"
-import IntentMarketplace from "IntentMarketplace"
+import IntentMarketplaceV0_1 from "IntentMarketplaceV0_1"
 
 transaction(intentID: UInt64) {
-    let marketplace: &IntentMarketplace.Marketplace
+    let marketplace: &IntentMarketplaceV0_1.Marketplace
     let receiver: &{FungibleToken.Receiver}
     let signerAddress: Address
 
     prepare(signer: auth(Storage, BorrowValue) &Account) {
-        self.marketplace = IntentMarketplace.account.storage
-            .borrow<&IntentMarketplace.Marketplace>(
-                from: IntentMarketplace.MarketplaceStoragePath
-            ) ?? panic("Cannot borrow IntentMarketplace")
+        self.marketplace = IntentMarketplaceV0_1.account.storage
+            .borrow<&IntentMarketplaceV0_1.Marketplace>(
+                from: IntentMarketplaceV0_1.MarketplaceStoragePath
+            ) ?? panic("Cannot borrow IntentMarketplaceV0_1")
 
         self.receiver = signer.storage
             .borrow<&{FungibleToken.Receiver}>(from: /storage/flowTokenVault)

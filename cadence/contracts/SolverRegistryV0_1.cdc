@@ -1,11 +1,11 @@
-/// SolverRegistry.cdc
+/// SolverRegistryV0_1.cdc
 /// Registers AI solver agents by linking their Cadence address with a Flow EVM address.
 /// CRITICAL: Verifies ERC-8004 AgentIdentityRegistry via COA staticCall before accepting registration.
 /// Also reads reputationMultiplier from AgentReputationRegistry via COA staticCall.
 
 import EVM from "EVM"
 
-access(all) contract SolverRegistry {
+access(all) contract SolverRegistryV0_1 {
 
     // -------------------------------------------------------------------------
     // Events
@@ -41,6 +41,11 @@ access(all) contract SolverRegistry {
         access(all) var reputationMultiplier: UFix64
         access(all) let registeredAt: UFix64
 
+        /// Lifetime stats — incremented by protocol on each outcome
+        access(all) var totalIntentsWon: UInt64
+        access(all) var totalIntentsCompleted: UInt64
+        access(all) var totalIntentsFailed: UInt64
+
         init(
             cadenceAddress: Address,
             evmAddress: String,
@@ -52,10 +57,25 @@ access(all) contract SolverRegistry {
             self.tokenId = tokenId
             self.reputationMultiplier = reputationMultiplier
             self.registeredAt = getCurrentBlock().timestamp
+            self.totalIntentsWon = 0
+            self.totalIntentsCompleted = 0
+            self.totalIntentsFailed = 0
         }
 
         access(contract) fun updateReputation(newMultiplier: UFix64) {
             self.reputationMultiplier = newMultiplier
+        }
+
+        access(contract) fun recordWon() {
+            self.totalIntentsWon = self.totalIntentsWon + 1
+        }
+
+        access(contract) fun recordCompleted() {
+            self.totalIntentsCompleted = self.totalIntentsCompleted + 1
+        }
+
+        access(contract) fun recordFailed() {
+            self.totalIntentsFailed = self.totalIntentsFailed + 1
         }
     }
 
@@ -77,10 +97,10 @@ access(all) contract SolverRegistry {
 
     access(all) resource Admin {
         access(all) fun setIdentityRegistry(addr: String) {
-            SolverRegistry.agentIdentityRegistryAddress = addr
+            SolverRegistryV0_1.agentIdentityRegistryAddress = addr
         }
         access(all) fun setReputationRegistry(addr: String) {
-            SolverRegistry.agentReputationRegistryAddress = addr
+            SolverRegistryV0_1.agentReputationRegistryAddress = addr
         }
     }
 
@@ -126,10 +146,10 @@ access(all) contract SolverRegistry {
     }
 
     /// Encode a staticCall to `getMultiplier(uint256 tokenId)` — custom selector
-    /// selector: keccak256("getMultiplier(uint256)") = first 4 bytes
+    /// selector: keccak256("getMultiplier(uint256)") = 0xadf8252d
     access(self) fun encodeGetMultiplier(tokenId: UInt256): [UInt8] {
-        // selector: keccak256("getMultiplier(uint256)") = 0x5c3a93b9
-        var calldata: [UInt8] = [0x5c, 0x3a, 0x93, 0xb9]
+        // selector: keccak256("getMultiplier(uint256)") = 0xadf8252d
+        var calldata: [UInt8] = [0xad, 0xf8, 0x25, 0x2d]
         var tmp = tokenId
         var tokenIdBytes: [UInt8] = []
         var j = 0
@@ -156,12 +176,17 @@ access(all) contract SolverRegistry {
         var i = 0
         while i < 40 {
             let byteStr = hex.slice(from: i, upTo: i + 2)
-            let high = SolverRegistry.hexCharToUInt8(byteStr.slice(from: 0, upTo: 1))
-            let low  = SolverRegistry.hexCharToUInt8(byteStr.slice(from: 1, upTo: 2))
+            let high = SolverRegistryV0_1.hexCharToUInt8(byteStr.slice(from: 0, upTo: 1))
+            let low  = SolverRegistryV0_1.hexCharToUInt8(byteStr.slice(from: 1, upTo: 2))
             bytes.append((high << 4) | low)
             i = i + 2
         }
-        return EVM.EVMAddress(bytes: bytes)
+        return EVM.EVMAddress(bytes: [
+            bytes[0],  bytes[1],  bytes[2],  bytes[3],  bytes[4],
+            bytes[5],  bytes[6],  bytes[7],  bytes[8],  bytes[9],
+            bytes[10], bytes[11], bytes[12], bytes[13], bytes[14],
+            bytes[15], bytes[16], bytes[17], bytes[18], bytes[19]
+        ])
     }
 
     access(self) fun hexCharToUInt8(_ c: String): UInt8 {
@@ -176,12 +201,18 @@ access(all) contract SolverRegistry {
             case "7": return 7
             case "8": return 8
             case "9": return 9
-            case "a", "A": return 10
-            case "b", "B": return 11
-            case "c", "C": return 12
-            case "d", "D": return 13
-            case "e", "E": return 14
-            case "f", "F": return 15
+            case "a": return 10
+            case "A": return 10
+            case "b": return 11
+            case "B": return 11
+            case "c": return 12
+            case "C": return 12
+            case "d": return 13
+            case "D": return 13
+            case "e": return 14
+            case "E": return 14
+            case "f": return 15
+            case "F": return 15
         }
         return 0
     }
@@ -208,11 +239,11 @@ access(all) contract SolverRegistry {
         // Step 1: Verify ERC-8004 ownership via staticCall to AgentIdentityRegistry
         // ownerOf(tokenId) should return the solver's EVM address
         // ------------------------------------------------------------------
-        let identityAddr = SolverRegistry.parseEVMAddress(SolverRegistry.agentIdentityRegistryAddress)
-        let ownerOfCalldata = SolverRegistry.encodeOwnerOf(tokenId: tokenId)
+        let identityAddr = SolverRegistryV0_1.parseEVMAddress(SolverRegistryV0_1.agentIdentityRegistryAddress)
+        let ownerOfCalldata = SolverRegistryV0_1.encodeOwnerOf(tokenId: tokenId)
 
         let identityResult = EVM.dryCall(
-            from: SolverRegistry.parseEVMAddress(evmAddress),
+            from: SolverRegistryV0_1.parseEVMAddress(evmAddress),
             to: identityAddr,
             data: ownerOfCalldata,
             gasLimit: 50000,
@@ -228,7 +259,7 @@ access(all) contract SolverRegistry {
         // ownerOf returns address (20 bytes padded to 32 bytes in ABI encoding)
         // We accept if the result is non-zero (full address comparison is complex in Cadence)
         let ownerData = identityResult.data
-        let isNonZero = SolverRegistry.decodeUInt256(data: ownerData) != 0
+        let isNonZero = SolverRegistryV0_1.decodeUInt256(data: ownerData) != 0
         assert(
             isNonZero,
             message: "ERC-8004: tokenId has no owner — solver not valid"
@@ -238,11 +269,11 @@ access(all) contract SolverRegistry {
         // Step 2: Read reputationMultiplier via staticCall to AgentReputationRegistry
         // getMultiplier(tokenId) returns uint256 (scaled by 1e18 or as basis points)
         // ------------------------------------------------------------------
-        let reputationAddr = SolverRegistry.parseEVMAddress(SolverRegistry.agentReputationRegistryAddress)
-        let multiplierCalldata = SolverRegistry.encodeGetMultiplier(tokenId: tokenId)
+        let reputationAddr = SolverRegistryV0_1.parseEVMAddress(SolverRegistryV0_1.agentReputationRegistryAddress)
+        let multiplierCalldata = SolverRegistryV0_1.encodeGetMultiplier(tokenId: tokenId)
 
         let reputationResult = EVM.dryCall(
-            from: SolverRegistry.parseEVMAddress(evmAddress),
+            from: SolverRegistryV0_1.parseEVMAddress(evmAddress),
             to: reputationAddr,
             data: multiplierCalldata,
             gasLimit: 50000,
@@ -252,7 +283,7 @@ access(all) contract SolverRegistry {
         var reputationMultiplier: UFix64 = 1.0
 
         if reputationResult.status == EVM.Status.successful && reputationResult.data.length >= 32 {
-            let rawMultiplier = SolverRegistry.decodeUInt256(data: reputationResult.data)
+            let rawMultiplier = SolverRegistryV0_1.decodeUInt256(data: reputationResult.data)
             // Multiplier stored as basis points (10000 = 1.0x, 15000 = 1.5x)
             if rawMultiplier > 0 {
                 reputationMultiplier = UFix64(rawMultiplier) / 10000.0
@@ -265,28 +296,14 @@ access(all) contract SolverRegistry {
         // Prevent duplicate EVM address registrations
         let evmLower = evmAddress.toLower()
         assert(
-            SolverRegistry.evmToCadence[evmLower] == nil,
+            SolverRegistryV0_1.evmToCadence[evmLower] == nil,
             message: "EVM address already registered"
         )
 
-        // Get the Cadence address from the COA owner
-        // Note: in real usage, cadenceAddress is passed by the transaction signer
-        // We use a struct here with the EVM address as the primary key
-        let info = SolverInfo(
-            cadenceAddress: SolverRegistry.account.address, // updated in tx
-            evmAddress: evmLower,
-            tokenId: tokenId,
-            reputationMultiplier: reputationMultiplier
-        )
-
-        SolverRegistry.evmToCadence[evmLower] = SolverRegistry.account.address
-
-        emit SolverRegistered(
-            cadenceAddress: SolverRegistry.account.address,
-            evmAddress: evmLower,
-            tokenId: tokenId,
-            reputationMultiplier: reputationMultiplier
-        )
+        // Deprecated: this path cannot derive the true signer address.
+        // Use registerSolverWithAddress() instead — it requires an explicit cadenceAddress.
+        // We panic here to prevent silent misregistration.
+        panic("registerSolver() is deprecated — use registerSolverWithAddress() with the signer's Cadence address")
     }
 
     /// Register solver with explicit cadenceAddress (called from transaction with signer info).
@@ -299,11 +316,11 @@ access(all) contract SolverRegistry {
         // ------------------------------------------------------------------
         // Step 1: Verify ERC-8004 via EVM.dryCall (staticCall — no state change)
         // ------------------------------------------------------------------
-        let identityAddr = SolverRegistry.parseEVMAddress(SolverRegistry.agentIdentityRegistryAddress)
-        let ownerOfCalldata = SolverRegistry.encodeOwnerOf(tokenId: tokenId)
+        let identityAddr = SolverRegistryV0_1.parseEVMAddress(SolverRegistryV0_1.agentIdentityRegistryAddress)
+        let ownerOfCalldata = SolverRegistryV0_1.encodeOwnerOf(tokenId: tokenId)
 
         let identityResult = EVM.dryCall(
-            from: SolverRegistry.parseEVMAddress(evmAddress),
+            from: SolverRegistryV0_1.parseEVMAddress(evmAddress),
             to: identityAddr,
             data: ownerOfCalldata,
             gasLimit: 50000,
@@ -316,17 +333,17 @@ access(all) contract SolverRegistry {
         )
 
         let ownerData = identityResult.data
-        let isNonZero = SolverRegistry.decodeUInt256(data: ownerData) != 0
+        let isNonZero = SolverRegistryV0_1.decodeUInt256(data: ownerData) != 0
         assert(isNonZero, message: "ERC-8004: tokenId has no owner — solver not valid")
 
         // ------------------------------------------------------------------
         // Step 2: Read reputationMultiplier
         // ------------------------------------------------------------------
-        let reputationAddr = SolverRegistry.parseEVMAddress(SolverRegistry.agentReputationRegistryAddress)
-        let multiplierCalldata = SolverRegistry.encodeGetMultiplier(tokenId: tokenId)
+        let reputationAddr = SolverRegistryV0_1.parseEVMAddress(SolverRegistryV0_1.agentReputationRegistryAddress)
+        let multiplierCalldata = SolverRegistryV0_1.encodeGetMultiplier(tokenId: tokenId)
 
         let reputationResult = EVM.dryCall(
-            from: SolverRegistry.parseEVMAddress(evmAddress),
+            from: SolverRegistryV0_1.parseEVMAddress(evmAddress),
             to: reputationAddr,
             data: multiplierCalldata,
             gasLimit: 50000,
@@ -335,7 +352,7 @@ access(all) contract SolverRegistry {
 
         var reputationMultiplier: UFix64 = 1.0
         if reputationResult.status == EVM.Status.successful && reputationResult.data.length >= 32 {
-            let rawMultiplier = SolverRegistry.decodeUInt256(data: reputationResult.data)
+            let rawMultiplier = SolverRegistryV0_1.decodeUInt256(data: reputationResult.data)
             if rawMultiplier > 0 {
                 reputationMultiplier = UFix64(rawMultiplier) / 10000.0
             }
@@ -345,8 +362,8 @@ access(all) contract SolverRegistry {
         // Step 3: Store
         // ------------------------------------------------------------------
         let evmLower = evmAddress.toLower()
-        assert(SolverRegistry.evmToCadence[evmLower] == nil, message: "EVM address already registered")
-        assert(SolverRegistry.solvers[cadenceAddress] == nil, message: "Cadence address already registered")
+        assert(SolverRegistryV0_1.evmToCadence[evmLower] == nil, message: "EVM address already registered")
+        assert(SolverRegistryV0_1.solvers[cadenceAddress] == nil, message: "Cadence address already registered")
 
         let info = SolverInfo(
             cadenceAddress: cadenceAddress,
@@ -354,8 +371,8 @@ access(all) contract SolverRegistry {
             tokenId: tokenId,
             reputationMultiplier: reputationMultiplier
         )
-        SolverRegistry.solvers[cadenceAddress] = info
-        SolverRegistry.evmToCadence[evmLower] = cadenceAddress
+        SolverRegistryV0_1.solvers[cadenceAddress] = info
+        SolverRegistryV0_1.evmToCadence[evmLower] = cadenceAddress
 
         emit SolverRegistered(
             cadenceAddress: cadenceAddress,
@@ -370,14 +387,14 @@ access(all) contract SolverRegistry {
         cadenceAddress: Address,
         coa: &EVM.CadenceOwnedAccount
     ) {
-        assert(SolverRegistry.solvers[cadenceAddress] != nil, message: "Solver not registered")
-        let info = SolverRegistry.solvers[cadenceAddress]!
+        assert(SolverRegistryV0_1.solvers[cadenceAddress] != nil, message: "Solver not registered")
+        let info = SolverRegistryV0_1.solvers[cadenceAddress]!
 
-        let reputationAddr = SolverRegistry.parseEVMAddress(SolverRegistry.agentReputationRegistryAddress)
-        let multiplierCalldata = SolverRegistry.encodeGetMultiplier(tokenId: info.tokenId)
+        let reputationAddr = SolverRegistryV0_1.parseEVMAddress(SolverRegistryV0_1.agentReputationRegistryAddress)
+        let multiplierCalldata = SolverRegistryV0_1.encodeGetMultiplier(tokenId: info.tokenId)
 
         let result = EVM.dryCall(
-            from: SolverRegistry.parseEVMAddress(info.evmAddress),
+            from: SolverRegistryV0_1.parseEVMAddress(info.evmAddress),
             to: reputationAddr,
             data: multiplierCalldata,
             gasLimit: 50000,
@@ -385,11 +402,11 @@ access(all) contract SolverRegistry {
         )
 
         if result.status == EVM.Status.successful && result.data.length >= 32 {
-            let rawMultiplier = SolverRegistry.decodeUInt256(data: result.data)
+            let rawMultiplier = SolverRegistryV0_1.decodeUInt256(data: result.data)
             if rawMultiplier > 0 {
                 var updated = info
                 updated.updateReputation(newMultiplier: UFix64(rawMultiplier) / 10000.0)
-                SolverRegistry.solvers[cadenceAddress] = updated
+                SolverRegistryV0_1.solvers[cadenceAddress] = updated
             }
         }
     }
@@ -399,30 +416,30 @@ access(all) contract SolverRegistry {
     // -------------------------------------------------------------------------
 
     access(all) fun getSolver(cadenceAddress: Address): SolverInfo? {
-        return SolverRegistry.solvers[cadenceAddress]
+        return SolverRegistryV0_1.solvers[cadenceAddress]
     }
 
     access(all) fun getSolverByEVM(evmAddress: String): SolverInfo? {
         let evmLower = evmAddress.toLower()
-        if let cadenceAddr = SolverRegistry.evmToCadence[evmLower] {
-            return SolverRegistry.solvers[cadenceAddr]
+        if let cadenceAddr = SolverRegistryV0_1.evmToCadence[evmLower] {
+            return SolverRegistryV0_1.solvers[cadenceAddr]
         }
         return nil
     }
 
     access(all) fun isRegistered(cadenceAddress: Address): Bool {
-        return SolverRegistry.solvers[cadenceAddress] != nil
+        return SolverRegistryV0_1.solvers[cadenceAddress] != nil
     }
 
     access(all) fun getReputationMultiplier(cadenceAddress: Address): UFix64 {
-        if let info = SolverRegistry.solvers[cadenceAddress] {
+        if let info = SolverRegistryV0_1.solvers[cadenceAddress] {
             return info.reputationMultiplier
         }
         return 0.0
     }
 
     access(all) fun getAllSolverAddresses(): [Address] {
-        return SolverRegistry.solvers.keys
+        return SolverRegistryV0_1.solvers.keys
     }
 
     // -------------------------------------------------------------------------

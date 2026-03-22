@@ -2,7 +2,7 @@
 /// Submits a solver bid for an open intent.
 /// Signer must be a registered solver in SolverRegistry.
 
-import BidManager from "BidManager"
+import BidManagerV0_1 from "BidManagerV0_1"
 
 transaction(
     intentID: UInt64,
@@ -17,7 +17,7 @@ transaction(
     }
 
     execute {
-        let bidID = BidManager.submitBid(
+        let bidID = BidManagerV0_1.submitBid(
             intentID: intentID,
             solverAddress: self.solverAddress,
             offeredAPY: offeredAPY,

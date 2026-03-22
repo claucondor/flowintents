@@ -81,7 +81,7 @@ export class EventListener {
   private _subscribe(): void {
     if (!this.running) return
 
-    const eventType = `A.${this.contractAddress}.IntentMarketplace.IntentCreated`
+    const eventType = `A.${this.contractAddress}.IntentMarketplaceV0_1.IntentCreated`
 
     try {
       const subscription = fcl.events(eventType).subscribe(

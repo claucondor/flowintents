@@ -1,20 +1,20 @@
-/// IntentExecutor_test.cdc
-/// Tests for IntentExecutor contract: cross-VM execution, state transitions.
+/// IntentExecutorV0_1_test.cdc
+/// Tests for IntentExecutorV0_1 contract: cross-VM execution, state transitions.
 
 import Test
 import BlockchainHelpers
-import "IntentMarketplace"
-import "BidManager"
-import "IntentExecutor"
+import "IntentMarketplaceV0_1"
+import "BidManagerV0_1"
+import "IntentExecutorV0_1"
 
 access(all) let alice   = Test.createAccount()
 access(all) let solver1 = Test.createAccount()
 
 access(all) fun setup() {
-    Test.expect(Test.deployContract(name: "IntentMarketplace", path: "../contracts/IntentMarketplace.cdc", arguments: []), Test.beNil())
-    Test.expect(Test.deployContract(name: "SolverRegistry",    path: "../contracts/SolverRegistry.cdc",    arguments: []), Test.beNil())
-    Test.expect(Test.deployContract(name: "BidManager",        path: "../contracts/BidManager.cdc",        arguments: []), Test.beNil())
-    Test.expect(Test.deployContract(name: "IntentExecutor",    path: "../contracts/IntentExecutor.cdc",    arguments: []), Test.beNil())
+    Test.expect(Test.deployContract(name: "IntentMarketplaceV0_1", path: "../contracts/IntentMarketplaceV0_1.cdc", arguments: []), Test.beNil())
+    Test.expect(Test.deployContract(name: "SolverRegistryV0_1",    path: "../contracts/SolverRegistryV0_1.cdc",    arguments: []), Test.beNil())
+    Test.expect(Test.deployContract(name: "BidManagerV0_1",        path: "../contracts/BidManagerV0_1.cdc",        arguments: []), Test.beNil())
+    Test.expect(Test.deployContract(name: "IntentExecutorV0_1",    path: "../contracts/IntentExecutorV0_1.cdc",    arguments: []), Test.beNil())
 
     Test.expect(BlockchainHelpers.mintFlow(to: alice,   amount: 200.0), Test.beSucceeded())
     Test.expect(BlockchainHelpers.mintFlow(to: solver1, amount: 50.0),  Test.beSucceeded())
@@ -26,12 +26,8 @@ access(all) fun setup() {
 
 access(all) fun testComposerAddressDefault() {
     Test.assertEqual(
-        IntentExecutor.composerAddress,
+        IntentExecutorV0_1.composerAddress,
         "0x0000000000000000000000000000000000000000"
-    )
-    Test.assertEqual(
-        IntentExecutor.stgUSDCAddress,
-        "0xF1815bd50389c46847f0Bda824eC8da914045D14"
     )
 }
 
@@ -49,7 +45,7 @@ access(all) fun testExecuteOnOpenIntentFails() {
         arguments: [50.0, 5.0, 30, UInt64(getCurrentBlock().height + 1000)]
     )
     Test.expect(Test.executeTransaction(createTx), Test.beSucceeded())
-    let intentID = IntentMarketplace.totalIntents - 1
+    let intentID = IntentMarketplaceV0_1.totalIntents - 1
 
     // Try to execute without selecting a winner first
     let executeCode = Test.readFile("../transactions/executeIntent.cdc")
@@ -70,7 +66,7 @@ access(all) fun testExecuteOnOpenIntentFails() {
 
 access(all) fun testNonWinningSolverCannotExecute() {
     // Verify contract-level assertion: "Only the winning solver can execute this intent"
-    // This assertion fires in IntentExecutor.executeIntent when solverAddress != winningBid.solverAddress
+    // This assertion fires in IntentExecutorV0_1.executeIntent when solverAddress != winningBid.solverAddress
     // The assertion is placed in the contract function, ensuring it will revert any tx
     // that tries to execute with a non-winner address
 
@@ -97,7 +93,7 @@ access(all) fun testIntentStatusTransitions() {
         arguments: [75.0, 7.5, 60, UInt64(getCurrentBlock().height + 2000)]
     )
     Test.expect(Test.executeTransaction(createTx), Test.beSucceeded())
-    let intentID = IntentMarketplace.totalIntents - 1
+    let intentID = IntentMarketplaceV0_1.totalIntents - 1
 
     // Verify Open status
     let scriptCode = Test.readFile("../scripts/getIntent.cdc")

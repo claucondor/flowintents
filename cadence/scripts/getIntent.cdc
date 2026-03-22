@@ -1,7 +1,7 @@
 /// getIntent.cdc
 /// Returns all fields of an intent by ID.
 
-import IntentMarketplace from "IntentMarketplace"
+import IntentMarketplaceV0_1 from "IntentMarketplaceV0_1"
 
 access(all) struct IntentView {
     access(all) let id: UInt64
@@ -32,10 +32,10 @@ access(all) struct IntentView {
 }
 
 access(all) fun main(intentID: UInt64): IntentView? {
-    if let intent = IntentMarketplace.getIntent(id: intentID) {
+    if let intent = IntentMarketplaceV0_1.getIntent(id: intentID) {
         return IntentView(
             id: intent.id,
-            owner: intent.owner,
+            owner: intent.intentOwner,
             tokenType: intent.tokenType.identifier,
             principalAmount: intent.principalAmount,
             vaultBalance: intent.principalVault.balance,

@@ -1,16 +1,16 @@
-/// SolverRegistry_test.cdc
-/// Tests for SolverRegistry: ERC-8004 verification, registration, reputation.
+/// SolverRegistryV0_1_test.cdc
+/// Tests for SolverRegistryV0_1: ERC-8004 verification, registration, reputation.
 
 import Test
 import BlockchainHelpers
-import "SolverRegistry"
+import "SolverRegistryV0_1"
 
 access(all) let solver1 = Test.createAccount()
 access(all) let solver2 = Test.createAccount()
 
 access(all) fun setup() {
     Test.expect(
-        Test.deployContract(name: "SolverRegistry", path: "../contracts/SolverRegistry.cdc", arguments: []),
+        Test.deployContract(name: "SolverRegistryV0_1", path: "../contracts/SolverRegistryV0_1.cdc", arguments: []),
         Test.beNil()
     )
 }
@@ -20,9 +20,9 @@ access(all) fun setup() {
 // -------------------------------------------------------------------------
 
 access(all) fun testInitialState() {
-    Test.assertEqual(SolverRegistry.getAllSolverAddresses().length, 0)
-    Test.assertEqual(SolverRegistry.isRegistered(cadenceAddress: solver1.address), false)
-    Test.assertEqual(SolverRegistry.getReputationMultiplier(cadenceAddress: solver1.address), 0.0 as UFix64)
+    Test.assertEqual(SolverRegistryV0_1.getAllSolverAddresses().length, 0)
+    Test.assertEqual(SolverRegistryV0_1.isRegistered(cadenceAddress: solver1.address), false)
+    Test.assertEqual(SolverRegistryV0_1.getReputationMultiplier(cadenceAddress: solver1.address), 0.0 as UFix64)
 }
 
 // -------------------------------------------------------------------------
@@ -32,11 +32,11 @@ access(all) fun testInitialState() {
 access(all) fun testAgentRegistryAddressDefault() {
     // Default addresses should be zero address (unset)
     Test.assertEqual(
-        SolverRegistry.agentIdentityRegistryAddress,
+        SolverRegistryV0_1.agentIdentityRegistryAddress,
         "0x0000000000000000000000000000000000000000"
     )
     Test.assertEqual(
-        SolverRegistry.agentReputationRegistryAddress,
+        SolverRegistryV0_1.agentReputationRegistryAddress,
         "0x0000000000000000000000000000000000000000"
     )
 }
@@ -64,10 +64,10 @@ access(all) fun testBasisPointConversion() {
 // -------------------------------------------------------------------------
 
 access(all) fun testGetUnregisteredSolverReturnsNil() {
-    let info = SolverRegistry.getSolver(cadenceAddress: solver1.address)
+    let info = SolverRegistryV0_1.getSolver(cadenceAddress: solver1.address)
     Test.assertEqual(info, nil)
 
-    let infoByEVM = SolverRegistry.getSolverByEVM(evmAddress: "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+    let infoByEVM = SolverRegistryV0_1.getSolverByEVM(evmAddress: "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
     Test.assertEqual(infoByEVM, nil)
 }
 

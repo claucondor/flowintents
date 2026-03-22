@@ -190,6 +190,8 @@ contract AgentIdentityRegistryTest is Test {
         vm.assume(user != address(0));
         vm.assume(user != alice && user != bob && user != owner);
         vm.assume(bytes(uri).length > 0 && bytes(uri).length < 200);
+        // Filter out contract addresses — _safeMint will revert if recipient doesn't implement IERC721Receiver
+        vm.assume(user.code.length == 0);
 
         vm.prank(user);
         uint256 tokenId = registry.registerAgent(SOLVER_TYPE, uri);

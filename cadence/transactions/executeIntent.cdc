@@ -3,7 +3,7 @@
 /// The solver's COA sends the encodedBatch to FlowIntentsComposer.sol.
 
 import EVM from "EVM"
-import IntentExecutor from "IntentExecutor"
+import IntentExecutorV0_1 from "IntentExecutorV0_1"
 
 transaction(intentID: UInt64) {
     let coa: auth(EVM.Call) &EVM.CadenceOwnedAccount
@@ -20,7 +20,7 @@ transaction(intentID: UInt64) {
     }
 
     execute {
-        IntentExecutor.executeIntent(
+        IntentExecutorV0_1.executeIntent(
             intentID: intentID,
             solverAddress: self.solverAddress,
             coa: self.coa

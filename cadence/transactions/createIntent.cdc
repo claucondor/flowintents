@@ -4,7 +4,7 @@
 
 import FungibleToken from "FungibleToken"
 import FlowToken from "FlowToken"
-import IntentMarketplace from "IntentMarketplace"
+import IntentMarketplaceV0_1 from "IntentMarketplaceV0_1"
 
 transaction(
     amount: UFix64,
@@ -12,16 +12,16 @@ transaction(
     durationDays: UInt64,
     expiryBlock: UInt64
 ) {
-    let marketplace: &IntentMarketplace.Marketplace
+    let marketplace: &IntentMarketplaceV0_1.Marketplace
     let vault: @{FungibleToken.Vault}
     let signerAddress: Address
 
     prepare(signer: auth(Storage, BorrowValue) &Account) {
         // Borrow the marketplace
-        self.marketplace = IntentMarketplace.account.storage
-            .borrow<&IntentMarketplace.Marketplace>(
-                from: IntentMarketplace.MarketplaceStoragePath
-            ) ?? panic("Cannot borrow IntentMarketplace")
+        self.marketplace = IntentMarketplaceV0_1.account.storage
+            .borrow<&IntentMarketplaceV0_1.Marketplace>(
+                from: IntentMarketplaceV0_1.MarketplaceStoragePath
+            ) ?? panic("Cannot borrow IntentMarketplaceV0_1")
 
         // Withdraw principal from signer's FlowToken vault
         let flowVault = signer.storage

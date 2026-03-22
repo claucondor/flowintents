@@ -1,7 +1,7 @@
 /// getIntentsByUser.cdc
 /// Returns all intent IDs and summary info for a given user address.
 
-import IntentMarketplace from "IntentMarketplace"
+import IntentMarketplaceV0_1 from "IntentMarketplaceV0_1"
 
 access(all) struct IntentSummary {
     access(all) let id: UInt64
@@ -22,11 +22,11 @@ access(all) struct IntentSummary {
 }
 
 access(all) fun main(userAddress: Address): [IntentSummary] {
-    let intentIDs = IntentMarketplace.getIntentsByUser(owner: userAddress)
+    let intentIDs = IntentMarketplaceV0_1.getIntentsByUser(owner: userAddress)
     var result: [IntentSummary] = []
 
     for id in intentIDs {
-        if let intent = IntentMarketplace.getIntent(id: id) {
+        if let intent = IntentMarketplaceV0_1.getIntent(id: id) {
             result.append(IntentSummary(
                 id: intent.id,
                 principalAmount: intent.principalAmount,

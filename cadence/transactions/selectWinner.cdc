@@ -1,7 +1,7 @@
 /// selectWinner.cdc
 /// Intent owner selects the winning bid (highest score; earliest submission on tie).
 
-import BidManager from "BidManager"
+import BidManagerV0_1 from "BidManagerV0_1"
 
 transaction(intentID: UInt64) {
     let callerAddress: Address
@@ -11,7 +11,7 @@ transaction(intentID: UInt64) {
     }
 
     execute {
-        BidManager.selectWinner(intentID: intentID, callerAddress: self.callerAddress)
+        BidManagerV0_1.selectWinner(intentID: intentID, callerAddress: self.callerAddress)
         log("Winner selected for intent ".concat(intentID.toString()))
     }
 }

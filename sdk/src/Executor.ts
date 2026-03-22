@@ -66,10 +66,10 @@ function buildAuthorization(
 // ---- Cadence contract addresses (from cadence/scripts/deploy/addresses.json) ----
 
 const CADENCE_ADDRESSES = {
-  IntentMarketplace: 'f8d6e0586b0a20c7',
-  SolverRegistry: 'f8d6e0586b0a20c7',
-  BidManager: 'f8d6e0586b0a20c7',
-  IntentExecutor: 'f8d6e0586b0a20c7',
+  IntentMarketplaceV0_1: 'f8d6e0586b0a20c7',
+  SolverRegistryV0_1: 'f8d6e0586b0a20c7',
+  BidManagerV0_1: 'f8d6e0586b0a20c7',
+  IntentExecutorV0_1: 'f8d6e0586b0a20c7',
 }
 
 // ---- Cadence transactions (inline) ----
@@ -85,8 +85,8 @@ const CADENCE_ADDRESSES = {
  *   estimatedFeeBPS: UInt64?
  */
 const SUBMIT_BID_CDC = `
-import IntentMarketplace from 0x${CADENCE_ADDRESSES.IntentMarketplace}
-import BidManager from 0x${CADENCE_ADDRESSES.BidManager}
+import IntentMarketplaceV0_1 from 0x${CADENCE_ADDRESSES.IntentMarketplaceV0_1}
+import BidManagerV0_1 from 0x${CADENCE_ADDRESSES.BidManagerV0_1}
 
 transaction(
   intentID: UInt64,
@@ -98,7 +98,7 @@ transaction(
   estimatedFeeBPS: UInt64?
 ) {
   prepare(signer: &Account) {
-    BidManager.submitBid(
+    BidManagerV0_1.submitBid(
       intentID: intentID,
       offeredAPY: offeredAPY,
       offeredAmountOut: offeredAmountOut,
@@ -113,11 +113,11 @@ transaction(
 `
 
 const REGISTER_SOLVER_CDC = `
-import SolverRegistry from 0x${CADENCE_ADDRESSES.SolverRegistry}
+import SolverRegistryV0_1 from 0x${CADENCE_ADDRESSES.SolverRegistryV0_1}
 
 transaction(agentTokenId: UInt64, evmAddress: String) {
   prepare(signer: &Account) {
-    SolverRegistry.registerSolver(
+    SolverRegistryV0_1.registerSolver(
       agentTokenId: agentTokenId,
       evmAddress: evmAddress,
       solver: signer.address

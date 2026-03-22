@@ -5,7 +5,7 @@
 import FlowTransactionScheduler from "FlowTransactionScheduler"
 import FlowToken from "FlowToken"
 import FungibleToken from "FungibleToken"
-import ScheduledManager from "ScheduledManager"
+import ScheduledManagerV0_1 from "ScheduledManagerV0_1"
 
 transaction(
     targetTimestamp: UFix64,
@@ -27,7 +27,7 @@ transaction(
                 /public/flowTransactionScheduler
             ) ?? panic("Cannot borrow FlowTransactionScheduler manager")
 
-        ScheduledManager.scheduleCheck(
+        ScheduledManagerV0_1.scheduleCheck(
             signer: signer,
             schedulerManager: schedulerManager,
             targetTimestamp: targetTimestamp,

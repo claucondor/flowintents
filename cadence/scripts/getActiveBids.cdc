@@ -1,7 +1,7 @@
 /// getActiveBids.cdc
 /// Returns all bids for a given intentID with their scores.
 
-import BidManager from "BidManager"
+import BidManagerV0_1 from "BidManagerV0_1"
 
 access(all) struct BidView {
     access(all) let bidID: UInt64
@@ -25,11 +25,11 @@ access(all) struct BidView {
 }
 
 access(all) fun main(intentID: UInt64): [BidView] {
-    let bidIDs = BidManager.getBidsForIntent(intentID: intentID)
+    let bidIDs = BidManagerV0_1.getBidsForIntent(intentID: intentID)
     var result: [BidView] = []
 
     for bidID in bidIDs {
-        if let bid = BidManager.getBid(bidID: bidID) {
+        if let bid = BidManagerV0_1.getBid(bidID: bidID) {
             result.append(BidView(
                 bidID: bid.id,
                 intentID: bid.intentID,

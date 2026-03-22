@@ -1,11 +1,11 @@
-/// BidManager_test.cdc
-/// Tests for BidManager contract: bidding, scoring, winner selection.
+/// BidManagerV0_1_test.cdc
+/// Tests for BidManagerV0_1 contract: bidding, scoring, winner selection.
 
 import Test
 import BlockchainHelpers
-import "IntentMarketplace"
-import "SolverRegistry"
-import "BidManager"
+import "IntentMarketplaceV0_1"
+import "SolverRegistryV0_1"
+import "BidManagerV0_1"
 import "FungibleToken"
 import "FlowToken"
 
@@ -16,9 +16,9 @@ access(all) let solver3 = Test.createAccount()
 
 access(all) fun setup() {
     // Deploy contracts in dependency order
-    Test.expect(Test.deployContract(name: "IntentMarketplace", path: "../contracts/IntentMarketplace.cdc", arguments: []), Test.beNil())
-    Test.expect(Test.deployContract(name: "SolverRegistry",    path: "../contracts/SolverRegistry.cdc",    arguments: []), Test.beNil())
-    Test.expect(Test.deployContract(name: "BidManager",        path: "../contracts/BidManager.cdc",        arguments: []), Test.beNil())
+    Test.expect(Test.deployContract(name: "IntentMarketplaceV0_1", path: "../contracts/IntentMarketplaceV0_1.cdc", arguments: []), Test.beNil())
+    Test.expect(Test.deployContract(name: "SolverRegistryV0_1",    path: "../contracts/SolverRegistryV0_1.cdc",    arguments: []), Test.beNil())
+    Test.expect(Test.deployContract(name: "BidManagerV0_1",        path: "../contracts/BidManagerV0_1.cdc",        arguments: []), Test.beNil())
 
     // Fund alice
     Test.expect(BlockchainHelpers.mintFlow(to: alice,   amount: 200.0), Test.beSucceeded())
@@ -40,7 +40,7 @@ access(all) fun createTestIntent(amount: UFix64): UInt64 {
         arguments: [amount, 5.0, 30, UInt64(getCurrentBlock().height + 1000)]
     )
     Test.expect(Test.executeTransaction(tx), Test.beSucceeded())
-    return IntentMarketplace.totalIntents - 1
+    return IntentMarketplaceV0_1.totalIntents - 1
 }
 
 // -------------------------------------------------------------------------
@@ -54,9 +54,9 @@ access(all) fun testBidSubmissionAndWinnerSelection() {
 
     let intentID = createTestIntent(amount: 100.0)
 
-    // Simulate solver registration by calling SolverRegistry directly
+    // Simulate solver registration by calling SolverRegistryV0_1 directly
     // (In emulator tests, the EVM staticCall will need a mock COA)
-    // For now, test BidManager's scoring logic assuming solvers are registered
+    // For now, test BidManagerV0_1's scoring logic assuming solvers are registered
 
     // Submit bid from solver1: 5% APY, reputation 1.0 → score 5.0
     let submitCode = Test.readFile("../transactions/submitBid.cdc")
@@ -75,11 +75,11 @@ access(all) fun testBidSubmissionAndWinnerSelection() {
     // Integration tests would register first
 
     // Verify bid IDs are monotonically increasing
-    let bid1ID = BidManager.totalBids
+    let bid1ID = BidManagerV0_1.totalBids
     Test.assertEqual(bid1ID, UInt64(0))
 
     // Verify getWinningBid returns nil before selectWinner
-    let winningBid = BidManager.getWinningBid(intentID: intentID)
+    let winningBid = BidManagerV0_1.getWinningBid(intentID: intentID)
     Test.assertEqual(winningBid, nil)
 }
 
@@ -90,7 +90,7 @@ access(all) fun testBidSubmissionAndWinnerSelection() {
 access(all) fun testTiebreakingBySubmissionTime() {
     // Verify scoring formula: score = offeredAPY * reputationMultiplier
     // If two solvers have identical scores, earliest submittedAt wins
-    // This is verified by checking BidManager.selectWinner logic contract-side
+    // This is verified by checking BidManagerV0_1.selectWinner logic contract-side
 
     // Create two mock bids with same score but different timestamps
     // (Logic testing without EVM dependency)
@@ -110,7 +110,7 @@ access(all) fun testTiebreakingBySubmissionTime() {
 // -------------------------------------------------------------------------
 
 access(all) fun testDuplicateBidFails() {
-    // The BidManager uses solverBidForIntent key to prevent duplicate bids
+    // The BidManagerV0_1 uses solverBidForIntent key to prevent duplicate bids
     // Verify the deduplication key construction
     let intentID: UInt64 = 0
     let solverAddress = solver1.address

@@ -2,7 +2,7 @@
 /// Returns the score a solver would receive for a given APY offer,
 /// based on their current reputation multiplier from SolverRegistry.
 
-import SolverRegistry from "SolverRegistry"
+import SolverRegistryV0_1 from "SolverRegistryV0_1"
 
 access(all) struct SolverScoreView {
     access(all) let cadenceAddress: Address
@@ -24,7 +24,7 @@ access(all) struct SolverScoreView {
 }
 
 access(all) fun main(solverAddress: Address, offeredAPY: UFix64): SolverScoreView {
-    if let info = SolverRegistry.getSolver(cadenceAddress: solverAddress) {
+    if let info = SolverRegistryV0_1.getSolver(cadenceAddress: solverAddress) {
         let score = offeredAPY * info.reputationMultiplier
         return SolverScoreView(
             cadenceAddress: solverAddress,

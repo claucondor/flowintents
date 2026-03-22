@@ -1,4 +1,4 @@
-/// ScheduledManager.cdc
+/// ScheduledManagerV0_1.cdc
 /// Onchain automation for FlowIntents using Forte Scheduled Transactions.
 /// Implements the FlowTransactionScheduler.TransactionHandler interface.
 /// Iterates active intents, checks positions, rebalances if APY drops below threshold,
@@ -8,11 +8,11 @@ import FlowTransactionScheduler from "FlowTransactionScheduler"
 import FungibleToken from "FungibleToken"
 import FlowToken from "FlowToken"
 import EVM from "EVM"
-import IntentMarketplace from "IntentMarketplace"
-import IntentExecutor from "IntentExecutor"
-import BidManager from "BidManager"
+import IntentMarketplaceV0_1 from "IntentMarketplaceV0_1"
+import IntentExecutorV0_1 from "IntentExecutorV0_1"
+import BidManagerV0_1 from "BidManagerV0_1"
 
-access(all) contract ScheduledManager {
+access(all) contract ScheduledManagerV0_1 {
 
     // -------------------------------------------------------------------------
     // Events
@@ -55,10 +55,10 @@ access(all) contract ScheduledManager {
     access(all) resource Admin {
         access(all) fun setRebalanceThreshold(threshold: UFix64) {
             pre { threshold > 0.0 && threshold <= 1.0: "Threshold must be between 0 and 1" }
-            ScheduledManager.rebalanceThreshold = threshold
+            ScheduledManagerV0_1.rebalanceThreshold = threshold
         }
         access(all) fun setDefaultExecutionEffort(effort: UInt64) {
-            ScheduledManager.defaultExecutionEffort = effort
+            ScheduledManagerV0_1.defaultExecutionEffort = effort
         }
     }
 
@@ -85,23 +85,23 @@ access(all) contract ScheduledManager {
             // If no specific IDs given, we check all open + active intents
             // We read from Marketplace open intents; active ones are tracked separately
             if intentIDs.length == 0 {
-                intentIDs = IntentMarketplace.getOpenIntents()
+                intentIDs = IntentMarketplaceV0_1.getOpenIntents()
             }
 
             var checkedCount = 0
 
             for intentID in intentIDs {
-                let intent = IntentMarketplace.getIntent(id: intentID)
+                let intent = IntentMarketplaceV0_1.getIntent(id: intentID)
                 if intent == nil { continue }
 
                 let intentRef = intent!
 
                 // Check expiry — if expired, flag it
-                if intentRef.status == IntentMarketplace.IntentStatus.Open ||
-                   intentRef.status == IntentMarketplace.IntentStatus.BidSelected {
+                if intentRef.status == IntentMarketplaceV0_1.IntentStatus.Open ||
+                   intentRef.status == IntentMarketplaceV0_1.IntentStatus.BidSelected {
                     if getCurrentBlock().height >= intentRef.expiryBlock {
                         // Expiry handling — emit event; actual fund return requires owner receiver
-                        // The ScheduledManager flags it; a separate cleanup tx handles the vault move
+                        // The ScheduledManagerV0_1 flags it; a separate cleanup tx handles the vault move
                         emit PositionChecked(
                             intentID: intentID,
                             currentAPY: 0.0,
@@ -112,10 +112,10 @@ access(all) contract ScheduledManager {
                 }
 
                 // Check active intents for APY drift
-                if intentRef.status == IntentMarketplace.IntentStatus.Active {
-                    let currentAPY = ScheduledManager.fetchCurrentAPY(intentID: intentID)
+                if intentRef.status == IntentMarketplaceV0_1.IntentStatus.Active {
+                    let currentAPY = ScheduledManagerV0_1.fetchCurrentAPY(intentID: intentID)
                     let targetAPY  = intentRef.targetAPY
-                    let threshold  = targetAPY * ScheduledManager.rebalanceThreshold
+                    let threshold  = targetAPY * ScheduledManagerV0_1.rebalanceThreshold
 
                     var rebalanceTriggered = false
                     if currentAPY < threshold {
@@ -128,7 +128,7 @@ access(all) contract ScheduledManager {
                         )
                         // Rebalance logic: signal that this intent needs re-execution
                         // The actual rebalance is done in a separate tx by the winning solver
-                        // (ScheduledManager cannot hold COA — it needs the solver's COA for EVM calls)
+                        // (ScheduledManagerV0_1 cannot hold COA — it needs the solver's COA for EVM calls)
                     }
 
                     emit PositionChecked(
@@ -155,9 +155,9 @@ access(all) contract ScheduledManager {
         access(all) fun resolveView(_ view: Type): AnyStruct? {
             switch view {
                 case Type<StoragePath>():
-                    return ScheduledManager.HandlerStoragePath
+                    return ScheduledManagerV0_1.HandlerStoragePath
                 case Type<PublicPath>():
-                    return ScheduledManager.HandlerPublicPath
+                    return ScheduledManagerV0_1.HandlerPublicPath
                 default:
                     return nil
             }
@@ -178,19 +178,19 @@ access(all) contract ScheduledManager {
         intentIDs: [UInt64]?,
         feesVault: @FlowToken.Vault
     ) {
-        let executionEffort = ScheduledManager.defaultExecutionEffort
+        let executionEffort = ScheduledManagerV0_1.defaultExecutionEffort
 
         let estimate = FlowTransactionScheduler.calculateFee(
             executionEffort: executionEffort,
             priority: priority,
-            dataSizeMB: 0
+            dataSizeMB: 0.0
         )
         assert(feesVault.balance >= estimate, message: "Insufficient fees for scheduled transaction")
 
         // Issue a capability for the handler
         let handlerCap = signer.capabilities.storage.issue<
             auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}
-        >(ScheduledManager.HandlerStoragePath)
+        >(ScheduledManagerV0_1.HandlerStoragePath)
 
         let data: AnyStruct? = intentIDs != nil ? intentIDs! as AnyStruct : nil
 
@@ -223,7 +223,7 @@ access(all) contract ScheduledManager {
         }
         calldata.appendAll(idBytes)
 
-        let composerAddr = IntentExecutor.composerAddress
+        let composerAddr = IntentExecutorV0_1.composerAddress
         let zeroAddr = EVM.EVMAddress(bytes: [
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
         ])
@@ -234,7 +234,7 @@ access(all) contract ScheduledManager {
 
         let result = EVM.dryCall(
             from: zeroAddr,
-            to: ScheduledManager.parseEVMAddress(composerAddr),
+            to: ScheduledManagerV0_1.parseEVMAddress(composerAddr),
             data: calldata,
             gasLimit: 50000,
             value: EVM.Balance(attoflow: 0)
@@ -264,21 +264,43 @@ access(all) contract ScheduledManager {
         var bytes: [UInt8] = []
         var i = 0
         while i < 40 {
-            let high = ScheduledManager.hexCharToUInt8(hex.slice(from: i,     upTo: i + 1))
-            let low  = ScheduledManager.hexCharToUInt8(hex.slice(from: i + 1, upTo: i + 2))
+            let high = ScheduledManagerV0_1.hexCharToUInt8(hex.slice(from: i,     upTo: i + 1))
+            let low  = ScheduledManagerV0_1.hexCharToUInt8(hex.slice(from: i + 1, upTo: i + 2))
             bytes.append((high << 4) | low)
             i = i + 2
         }
-        return EVM.EVMAddress(bytes: bytes)
+        return EVM.EVMAddress(bytes: [
+            bytes[0],  bytes[1],  bytes[2],  bytes[3],  bytes[4],
+            bytes[5],  bytes[6],  bytes[7],  bytes[8],  bytes[9],
+            bytes[10], bytes[11], bytes[12], bytes[13], bytes[14],
+            bytes[15], bytes[16], bytes[17], bytes[18], bytes[19]
+        ])
     }
 
     access(self) fun hexCharToUInt8(_ c: String): UInt8 {
         switch c {
-            case "0": return 0; case "1": return 1; case "2": return 2; case "3": return 3
-            case "4": return 4; case "5": return 5; case "6": return 6; case "7": return 7
-            case "8": return 8; case "9": return 9
-            case "a", "A": return 10; case "b", "B": return 11; case "c", "C": return 12
-            case "d", "D": return 13; case "e", "E": return 14; case "f", "F": return 15
+            case "0": return 0
+            case "1": return 1
+            case "2": return 2
+            case "3": return 3
+            case "4": return 4
+            case "5": return 5
+            case "6": return 6
+            case "7": return 7
+            case "8": return 8
+            case "9": return 9
+            case "a": return 10
+            case "A": return 10
+            case "b": return 11
+            case "B": return 11
+            case "c": return 12
+            case "C": return 12
+            case "d": return 13
+            case "D": return 13
+            case "e": return 14
+            case "E": return 14
+            case "f": return 15
+            case "F": return 15
         }
         return 0
     }

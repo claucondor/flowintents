@@ -1,13 +1,13 @@
-/// IntentExecutor.cdc
+/// IntentExecutorV0_1.cdc
 /// Executes a winning intent's strategy via Cross-VM COA call to FlowIntentsComposer.sol.
 /// A single coa.call() sends the encodedBatch; EVM revert propagates as Cadence tx revert.
 
 import EVM from "EVM"
 import FungibleToken from "FungibleToken"
-import IntentMarketplace from "IntentMarketplace"
-import BidManager from "BidManager"
+import IntentMarketplaceV0_1 from "IntentMarketplaceV0_1"
+import BidManagerV0_1 from "BidManagerV0_1"
 
-access(all) contract IntentExecutor {
+access(all) contract IntentExecutorV0_1 {
 
     // -------------------------------------------------------------------------
     // Events
@@ -30,11 +30,8 @@ access(all) contract IntentExecutor {
     // Configuration
     // -------------------------------------------------------------------------
 
-    /// FlowIntentsComposer.sol address on Flow EVM — set by evm-core agent after deploy
+    /// FlowIntentsComposer.sol address on Flow EVM — set by admin after deploy
     access(all) var composerAddress: String
-
-    /// stgUSDC token address on Flow EVM (6 decimals)
-    access(all) let stgUSDCAddress: String
 
     access(all) let AdminStoragePath: StoragePath
 
@@ -44,7 +41,7 @@ access(all) contract IntentExecutor {
 
     access(all) resource Admin {
         access(all) fun setComposerAddress(addr: String) {
-            IntentExecutor.composerAddress = addr
+            IntentExecutorV0_1.composerAddress = addr
         }
     }
 
@@ -54,11 +51,28 @@ access(all) contract IntentExecutor {
 
     access(self) fun hexCharToUInt8(_ c: String): UInt8 {
         switch c {
-            case "0": return 0; case "1": return 1; case "2": return 2; case "3": return 3
-            case "4": return 4; case "5": return 5; case "6": return 6; case "7": return 7
-            case "8": return 8; case "9": return 9
-            case "a", "A": return 10; case "b", "B": return 11; case "c", "C": return 12
-            case "d", "D": return 13; case "e", "E": return 14; case "f", "F": return 15
+            case "0": return 0
+            case "1": return 1
+            case "2": return 2
+            case "3": return 3
+            case "4": return 4
+            case "5": return 5
+            case "6": return 6
+            case "7": return 7
+            case "8": return 8
+            case "9": return 9
+            case "a": return 10
+            case "A": return 10
+            case "b": return 11
+            case "B": return 11
+            case "c": return 12
+            case "C": return 12
+            case "d": return 13
+            case "D": return 13
+            case "e": return 14
+            case "E": return 14
+            case "f": return 15
+            case "F": return 15
         }
         return 0
     }
@@ -74,12 +88,17 @@ access(all) contract IntentExecutor {
         var bytes: [UInt8] = []
         var i = 0
         while i < 40 {
-            let high = IntentExecutor.hexCharToUInt8(hex.slice(from: i,     upTo: i + 1))
-            let low  = IntentExecutor.hexCharToUInt8(hex.slice(from: i + 1, upTo: i + 2))
+            let high = IntentExecutorV0_1.hexCharToUInt8(hex.slice(from: i,     upTo: i + 1))
+            let low  = IntentExecutorV0_1.hexCharToUInt8(hex.slice(from: i + 1, upTo: i + 2))
             bytes.append((high << 4) | low)
             i = i + 2
         }
-        return EVM.EVMAddress(bytes: bytes)
+        return EVM.EVMAddress(bytes: [
+            bytes[0],  bytes[1],  bytes[2],  bytes[3],  bytes[4],
+            bytes[5],  bytes[6],  bytes[7],  bytes[8],  bytes[9],
+            bytes[10], bytes[11], bytes[12], bytes[13], bytes[14],
+            bytes[15], bytes[16], bytes[17], bytes[18], bytes[19]
+        ])
     }
 
     /// Read back principal+yield from EVM as dry call (no state change).
@@ -103,7 +122,7 @@ access(all) contract IntentExecutor {
 
         let result = EVM.dryCall(
             from: coaAddress,
-            to: IntentExecutor.parseEVMAddress(IntentExecutor.composerAddress),
+            to: IntentExecutorV0_1.parseEVMAddress(IntentExecutorV0_1.composerAddress),
             data: calldata,
             gasLimit: 50000,
             value: EVM.Balance(attoflow: 0)
@@ -123,17 +142,23 @@ access(all) contract IntentExecutor {
         solverAddress: Address,
         coa: auth(EVM.Call) &EVM.CadenceOwnedAccount
     ) {
+        // Guard: composer must be configured before any execution
+        pre {
+            IntentExecutorV0_1.composerAddress != "0x0000000000000000000000000000000000000000":
+                "IntentExecutorV0_1: composerAddress not set — call Admin.setComposerAddress() first"
+        }
+
         // ------------------------------------------------------------------
         // Verify state
         // ------------------------------------------------------------------
-        let intent = IntentMarketplace.getIntent(id: intentID)
+        let intent = IntentMarketplaceV0_1.getIntent(id: intentID)
             ?? panic("Intent does not exist")
         assert(
-            intent.status == IntentMarketplace.IntentStatus.BidSelected,
+            intent.status == IntentMarketplaceV0_1.IntentStatus.BidSelected,
             message: "Intent must be in BidSelected status for execution"
         )
 
-        let winningBid = BidManager.getWinningBid(intentID: intentID)
+        let winningBid = BidManagerV0_1.getWinningBid(intentID: intentID)
             ?? panic("No winning bid found for intent")
         assert(
             winningBid.solverAddress == solverAddress,
@@ -143,10 +168,11 @@ access(all) contract IntentExecutor {
         // ------------------------------------------------------------------
         // Get encodedBatch from winning bid
         // ------------------------------------------------------------------
-        let encodedBatch = winningBid.encodedBatch
+        // .slice() copies the [UInt8] array from the &Bid reference
+        let encodedBatch = winningBid.encodedBatch.slice(from: 0, upTo: winningBid.encodedBatch.length)
         assert(encodedBatch.length > 0, message: "Encoded batch is empty")
 
-        let composerEVMAddress = IntentExecutor.parseEVMAddress(IntentExecutor.composerAddress)
+        let composerEVMAddress = IntentExecutorV0_1.parseEVMAddress(IntentExecutorV0_1.composerAddress)
 
         // ------------------------------------------------------------------
         // Make the single COA call to FlowIntentsComposer.sol
@@ -167,73 +193,58 @@ access(all) contract IntentExecutor {
         // ------------------------------------------------------------------
         // Update intent status to Active
         // ------------------------------------------------------------------
-        let marketplace = IntentMarketplace.account.storage
-            .borrow<&IntentMarketplace.Marketplace>(from: IntentMarketplace.MarketplaceStoragePath)
-            ?? panic("Cannot borrow Marketplace")
+        let marketplace = getAccount(self.account.address)
+            .capabilities.borrow<&IntentMarketplaceV0_1.Marketplace>(
+                IntentMarketplaceV0_1.MarketplacePublicPath
+            ) ?? panic("Cannot borrow Marketplace")
         marketplace.setActiveOnIntent(id: intentID)
 
         emit IntentExecuted(
             intentID: intentID,
             solverAddress: solverAddress,
             solverEVMAddress: winningBid.solverEVMAddress,
-            composerAddress: IntentExecutor.composerAddress,
-            gasUsed: result.deployedContract == nil ? 0 : 0  // gasUsed from result if available
+            composerAddress: IntentExecutorV0_1.composerAddress,
+            gasUsed: result.gasUsed
         )
     }
 
-    /// Complete an intent — called after the strategy matures.
-    /// Returns funds from EVM back to the intent owner.
+    /// Complete an intent by executing a withdrawal batch and returning funds to owner.
+    /// The withdrawalBatch is an ABI-encoded BatchStep[] that reverses the deposit strategy
+    /// (e.g. redeem from MORE Finance, unwrap WFLOW, etc.).
+    ///
+    /// NOTE: After the EVM batch runs, the funds are in the COA's EVM balance.
+    /// Bridging from EVM back to Cadence via the Flow cross-VM bridge is the solver's
+    /// responsibility and must happen in the same transaction via the bridge contract.
+    /// Until the cross-VM bridge wrappers are standardized, this function panics to
+    /// prevent silent fund loss.
     access(all) fun completeIntent(
         intentID: UInt64,
         solverAddress: Address,
         coa: auth(EVM.Call) &EVM.CadenceOwnedAccount,
         ownerReceiver: &{FungibleToken.Receiver}
     ) {
-        let intent = IntentMarketplace.getIntent(id: intentID)
+        pre {
+            IntentExecutorV0_1.composerAddress != "0x0000000000000000000000000000000000000000":
+                "IntentExecutorV0_1: composerAddress not set"
+        }
+
+        let intent = IntentMarketplaceV0_1.getIntent(id: intentID)
             ?? panic("Intent does not exist")
         assert(
-            intent.status == IntentMarketplace.IntentStatus.Active,
+            intent.status == IntentMarketplaceV0_1.IntentStatus.Active,
             message: "Intent must be Active to complete"
         )
 
-        let winningBid = BidManager.getWinningBid(intentID: intentID)
+        let winningBid = BidManagerV0_1.getWinningBid(intentID: intentID)
             ?? panic("No winning bid found")
         assert(winningBid.solverAddress == solverAddress, message: "Only winning solver can complete")
 
-        // Encode withdrawIntent(uint256 intentID) call
-        // Selector: keccak256("withdrawIntent(uint256)") — placeholder 0xd1e8c4a2
-        var calldata: [UInt8] = [0xd1, 0xe8, 0xc4, 0xa2]
-        var tmp = intentID
-        var idBytes: [UInt8] = []
-        var j = 0
-        while j < 32 {
-            idBytes.insert(at: 0, UInt8(tmp & 0xff))
-            tmp = tmp >> 8
-            j = j + 1
-        }
-        calldata.appendAll(idBytes)
-
-        let result = coa.call(
-            to: IntentExecutor.parseEVMAddress(IntentExecutor.composerAddress),
-            data: calldata,
-            gasLimit: 300000,
-            value: EVM.Balance(attoflow: 0)
-        )
-
-        assert(result.status == EVM.Status.successful, message: "withdrawIntent EVM call failed")
-
-        // Funds are now back in Cadence via the cross-VM bridge.
-        // The Marketplace completion handler distributes to the owner.
-        // NOTE: Actual vault handling depends on evm-core bridge implementation.
-        // The marketplace's completeIntent needs a vault — for now emit completion.
-        // Full vault flow implemented once cross-vm-bridge wrappers are available.
-        emit IntentExecuted(
-            intentID: intentID,
-            solverAddress: solverAddress,
-            solverEVMAddress: winningBid.solverEVMAddress,
-            composerAddress: IntentExecutor.composerAddress,
-            gasUsed: 0
-        )
+        // TODO Sprint 4: Implement withdrawal batch execution + cross-VM bridge return.
+        // The withdrawal encodedBatch is protocol/strategy-specific and must be provided
+        // by the solver. After EVM execution, funds must be bridged back via:
+        //   EVM.withdrawTokens() or the Flow EVM bridge contract.
+        // Until this is standardized, panic to prevent accidental fund loss.
+        panic("completeIntent: cross-VM bridge return not yet implemented — requires Sprint 4 bridge wrappers")
     }
 
     // -------------------------------------------------------------------------
@@ -241,10 +252,8 @@ access(all) contract IntentExecutor {
     // -------------------------------------------------------------------------
 
     init() {
-        // Placeholder — update after evm-core deploys FlowIntentsComposer
+        // Placeholder — update via Admin after EVM contracts are deployed
         self.composerAddress = "0x0000000000000000000000000000000000000000"
-        // stgUSDC = 0xF1815bd50389c46847f0Bda824eC8da914045D14 (6 decimals)
-        self.stgUSDCAddress = "0xF1815bd50389c46847f0Bda824eC8da914045D14"
 
         self.AdminStoragePath = /storage/FlowIntentsExecutorAdmin
         self.account.storage.save(<- create Admin(), to: self.AdminStoragePath)
