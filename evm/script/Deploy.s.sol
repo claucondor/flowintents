@@ -6,6 +6,7 @@ import {AgentIdentityRegistry}   from "../src/AgentIdentityRegistry.sol";
 import {AgentReputationRegistry} from "../src/AgentReputationRegistry.sol";
 import {AgentValidationRegistry} from "../src/AgentValidationRegistry.sol";
 import {FlowIntentsComposer}     from "../src/FlowIntentsComposer.sol";
+import {FlowIntentsComposerV2}   from "../src/FlowIntentsComposerV2.sol";
 
 /// @title Deploy
 /// @notice Deploys all FlowIntents EVM contracts in the correct dependency order:
@@ -91,6 +92,12 @@ contract Deploy is Script {
         FlowIntentsComposer composer = new FlowIntentsComposer(deployer);
         console2.log("FlowIntentsComposer deployed at:", address(composer));
 
+        // ------------------------------------------------------------------
+        // Step 5: FlowIntentsComposerV2 (dual-chain intent submission + strategy execution)
+        // ------------------------------------------------------------------
+        FlowIntentsComposerV2 composerV2 = new FlowIntentsComposerV2(deployer, address(identityReg));
+        console2.log("FlowIntentsComposerV2 deployed at:", address(composerV2));
+
         vm.stopBroadcast();
 
         // ------------------------------------------------------------------
@@ -102,7 +109,8 @@ contract Deploy is Script {
             address(identityReg),
             address(reputationReg),
             address(validationReg),
-            address(composer)
+            address(composer),
+            address(composerV2)
         );
 
         // Print summary
@@ -112,6 +120,7 @@ contract Deploy is Script {
         console2.log("AgentReputationRegistry:  ", address(reputationReg));
         console2.log("AgentValidationRegistry:  ", address(validationReg));
         console2.log("FlowIntentsComposer:      ", address(composer));
+        console2.log("FlowIntentsComposerV2:    ", address(composerV2));
         console2.log("\nKnown Flow EVM addresses:");
         console2.log("LayerZero EndpointV2:     ", LAYERZERO_ENDPOINT);
         console2.log("MORE Protocol Pool:       ", MORE_POOL);
@@ -135,7 +144,8 @@ contract Deploy is Script {
         address identityReg,
         address reputationReg,
         address validationReg,
-        address composer
+        address composer,
+        address composerV2
     ) internal {
         string memory json = string.concat(
             '{\n',
@@ -146,7 +156,8 @@ contract Deploy is Script {
             '    "AgentIdentityRegistry":   "', _addr2str(identityReg),   '",\n',
             '    "AgentReputationRegistry": "', _addr2str(reputationReg), '",\n',
             '    "AgentValidationRegistry": "', _addr2str(validationReg), '",\n',
-            '    "FlowIntentsComposer":     "', _addr2str(composer),      '"\n',
+            '    "FlowIntentsComposer":     "', _addr2str(composer),      '",\n',
+            '    "FlowIntentsComposerV2":   "', _addr2str(composerV2),    '"\n',
             '  },\n',
             '  "knownAddresses": {\n',
             '    "LayerZeroEndpointV2": "', _addr2str(LAYERZERO_ENDPOINT), '",\n',
