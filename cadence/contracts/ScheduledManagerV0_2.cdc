@@ -119,7 +119,7 @@ access(all) contract ScheduledManagerV0_2 {
                     // Take full gas escrow as protocol fee
                     let escrowBalance = marketplace.getGasEscrowBalance(id: intentID)
                     if escrowBalance > 0.0 {
-                        let escrowVault <- marketplace.withdrawGasEscrowFromIntent(id: intentID, amount: escrowBalance)
+                        let escrowVault <- marketplace.withdrawFullGasEscrowFromIntent(id: intentID)
                         protocolFeeReceiver.deposit(from: <- escrowVault)
                     }
 

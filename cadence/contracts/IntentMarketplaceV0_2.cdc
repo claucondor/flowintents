@@ -213,14 +213,8 @@ access(all) contract IntentMarketplaceV0_2 {
 
         // ---- Gas escrow methods ----
 
-        /// Withdraw a specific amount from the gas escrow (used to pay solver after execution)
-        access(contract) fun withdrawGasEscrow(amount: UFix64): @FlowToken.Vault {
-            pre { amount <= self.gasEscrow.balance: "Insufficient gas escrow balance" }
-            return <- (self.gasEscrow.withdraw(amount: amount) as! @FlowToken.Vault)
-        }
-
-        /// Return all remaining gas escrow to the user after execution
-        access(contract) fun returnUnusedGasEscrow(): @FlowToken.Vault {
+        /// Withdraw the FULL gas escrow (solver keeps entire escrow on execution)
+        access(contract) fun withdrawFullGasEscrow(): @FlowToken.Vault {
             return <- (self.gasEscrow.withdraw(amount: self.gasEscrow.balance) as! @FlowToken.Vault)
         }
 
@@ -553,7 +547,7 @@ access(all) contract IntentMarketplaceV0_2 {
             let returnVault <- intent.withdrawPrincipal()
             let returnedAmount = returnVault.balance
             // Also return gas escrow on cancel
-            let gasReturn <- intent.returnUnusedGasEscrow()
+            let gasReturn <- intent.withdrawFullGasEscrow()
             let gasReturnedAmount = gasReturn.balance
             intent.setCancelled()
             receiver.deposit(from: <- returnVault)
@@ -585,7 +579,7 @@ access(all) contract IntentMarketplaceV0_2 {
 
             let returnVault <- intent.withdrawPrincipal()
             let returnedAmount = returnVault.balance
-            let gasReturn <- intent.returnUnusedGasEscrow()
+            let gasReturn <- intent.withdrawFullGasEscrow()
             let gasReturnedAmount = gasReturn.balance
             intent.setExpired()
             receiver.deposit(from: <- returnVault)
@@ -645,16 +639,10 @@ access(all) contract IntentMarketplaceV0_2 {
 
         // --- Gas escrow operations (called by IntentExecutor / ScheduledManager) ---
 
-        /// Withdraw gas escrow to pay solver after execution
-        access(all) fun withdrawGasEscrowFromIntent(id: UInt64, amount: UFix64): @FlowToken.Vault {
+        /// Withdraw the FULL gas escrow — solver keeps entire escrow on execution
+        access(all) fun withdrawFullGasEscrowFromIntent(id: UInt64): @FlowToken.Vault {
             let intent = (&IntentMarketplaceV0_2.intents[id] as &Intent?)!
-            return <- intent.withdrawGasEscrow(amount: amount)
-        }
-
-        /// Return remaining gas escrow to intent owner
-        access(all) fun returnUnusedGasEscrowFromIntent(id: UInt64): @FlowToken.Vault {
-            let intent = (&IntentMarketplaceV0_2.intents[id] as &Intent?)!
-            return <- intent.returnUnusedGasEscrow()
+            return <- intent.withdrawFullGasEscrow()
         }
 
         /// Mark who executed the intent

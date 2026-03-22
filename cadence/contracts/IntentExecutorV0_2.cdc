@@ -35,11 +35,7 @@ access(all) contract IntentExecutorV0_2 {
         amount: UFix64
     )
 
-    access(all) event GasEscrowRefundedToOwner(
-        intentID: UInt64,
-        ownerAddress: Address,
-        amount: UFix64
-    )
+    /// REMOVED: GasEscrowRefundedToOwner — solver keeps full escrow in new model
 
     // -------------------------------------------------------------------------
     // EVM Selector Registry
@@ -319,14 +315,13 @@ access(all) contract IntentExecutorV0_2 {
 
     /// Execute a winning intent via BidManagerV0_2 + IntentMarketplaceV0_2.
     /// After successful EVM execution:
-    ///   1. Pay solver min(estimatedGas, escrow balance) from gas escrow
-    ///   2. Return remaining escrow to intent owner
+    ///   Transfer the FULL gas escrow to the solver (no refund to user).
+    ///   Solver profit = gasEscrow - actual gas cost (internal to solver).
     access(all) fun executeIntentV2(
         intentID: UInt64,
         solverAddress: Address,
         coa: auth(EVM.Call) &EVM.CadenceOwnedAccount,
-        solverFlowReceiver: &{FungibleToken.Receiver},
-        ownerFlowReceiver: &{FungibleToken.Receiver}
+        solverFlowReceiver: &{FungibleToken.Receiver}
     ) {
         pre {
             IntentExecutorV0_2.composerAddress != "0x0000000000000000000000000000000000000000":
@@ -377,36 +372,19 @@ access(all) contract IntentExecutorV0_2 {
         marketplace.setActiveOnIntent(id: intentID)
         marketplace.setExecutedByOnIntent(id: intentID, executorAddress: solverAddress)
 
-        // --- Gas escrow accounting ---
-        let estimatedGas = winningBid.estimatedGas
-        let escrowBalance = marketplace.getGasEscrowBalance(id: intentID)
-
-        // Pay solver: min(estimatedGas, escrowBalance)
-        let solverPayment = estimatedGas < escrowBalance ? estimatedGas : escrowBalance
-        if solverPayment > 0.0 {
-            let paymentVault <- marketplace.withdrawGasEscrowFromIntent(id: intentID, amount: solverPayment)
-            solverFlowReceiver.deposit(from: <- paymentVault)
+        // --- Gas escrow: transfer FULL escrow to solver ---
+        let fullEscrow <- marketplace.withdrawFullGasEscrowFromIntent(id: intentID)
+        let escrowAmount = fullEscrow.balance
+        if escrowAmount > 0.0 {
+            solverFlowReceiver.deposit(from: <- fullEscrow)
 
             emit GasPaymentToSolver(
                 intentID: intentID,
                 solverAddress: solverAddress,
-                amount: solverPayment
-            )
-        }
-
-        // Return remaining escrow to intent owner
-        let remainingEscrow <- marketplace.returnUnusedGasEscrowFromIntent(id: intentID)
-        let remainingAmount = remainingEscrow.balance
-        if remainingAmount > 0.0 {
-            ownerFlowReceiver.deposit(from: <- remainingEscrow)
-
-            emit GasEscrowRefundedToOwner(
-                intentID: intentID,
-                ownerAddress: intent.intentOwner,
-                amount: remainingAmount
+                amount: escrowAmount
             )
         } else {
-            destroy remainingEscrow
+            destroy fullEscrow
         }
 
         // Record execution

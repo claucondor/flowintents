@@ -9,12 +9,28 @@
 				"testing": "0000000000000007"
 			}
 		},
+		"BidManagerV0_2": {
+			"source": "cadence/contracts/BidManagerV0_2.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "c65395858a38d8ff",
+				"testing": "0000000000000007"
+			}
+		},
 		"IntentExecutorV0_1": {
 			"source": "cadence/contracts/IntentExecutorV0_1.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "c65395858a38d8ff",
 				"mainnet-fork": "c65395858a38d8ff",
+				"testing": "0000000000000007"
+			}
+		},
+		"IntentExecutorV0_2": {
+			"source": "cadence/contracts/IntentExecutorV0_2.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "c65395858a38d8ff",
 				"testing": "0000000000000007"
 			}
 		},
@@ -27,11 +43,27 @@
 				"testing": "0000000000000007"
 			}
 		},
+		"IntentMarketplaceV0_2": {
+			"source": "cadence/contracts/IntentMarketplaceV0_2.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "c65395858a38d8ff",
+				"testing": "0000000000000007"
+			}
+		},
 		"ScheduledManagerV0_1": {
 			"source": "cadence/contracts/ScheduledManagerV0_1.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet-fork": "c65395858a38d8ff",
+				"testing": "0000000000000007"
+			}
+		},
+		"ScheduledManagerV0_2": {
+			"source": "cadence/contracts/ScheduledManagerV0_2.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "c65395858a38d8ff",
 				"testing": "0000000000000007"
 			}
 		},
@@ -46,38 +78,6 @@
 		},
 		"SolverRegistryV0_2": {
 			"source": "cadence/contracts/SolverRegistryV0_2.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "c65395858a38d8ff",
-				"testing": "0000000000000007"
-			}
-		},
-		"BidManagerV0_2": {
-			"source": "cadence/contracts/BidManagerV0_2.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "c65395858a38d8ff",
-				"testing": "0000000000000007"
-			}
-		},
-		"IntentExecutorV0_2": {
-			"source": "cadence/contracts/IntentExecutorV0_2.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "c65395858a38d8ff",
-				"testing": "0000000000000007"
-			}
-		},
-		"IntentMarketplaceV0_2": {
-			"source": "cadence/contracts/IntentMarketplaceV0_2.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "c65395858a38d8ff",
-				"testing": "0000000000000007"
-			}
-		},
-		"ScheduledManagerV0_2": {
-			"source": "cadence/contracts/ScheduledManagerV0_2.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "c65395858a38d8ff",
@@ -221,7 +221,7 @@
 				"location": "emulator-account.pkey"
 			}
 		},
-		"mainnet-account": {
+		"fork-deployer-account": {
 			"address": "c65395858a38d8ff",
 			"key": {
 				"type": "hex",
@@ -232,14 +232,9 @@
 		},
 		"fork-service-account": {
 			"address": "e467b9dd11fa00df",
-			"key": {
-				"type": "hex",
-				"signatureAlgorithm": "ECDSA_P256",
-				"hashAlgorithm": "SHA3_256",
-				"privateKey": "REDACTED_DEV_KEY"
-			}
+			"key": "REDACTED_DEV_KEY"
 		},
-		"fork-deployer-account": {
+		"mainnet-account": {
 			"address": "c65395858a38d8ff",
 			"key": {
 				"type": "hex",
