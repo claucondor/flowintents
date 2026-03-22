@@ -5,7 +5,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "c65395858a38d8ff",
-				"mainnet-fork": "f8d6e0586b0a20c7",
+				"mainnet-fork": "c65395858a38d8ff",
 				"testing": "0000000000000007"
 			}
 		},
@@ -14,7 +14,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "c65395858a38d8ff",
-				"mainnet-fork": "f8d6e0586b0a20c7",
+				"mainnet-fork": "c65395858a38d8ff",
 				"testing": "0000000000000007"
 			}
 		},
@@ -23,7 +23,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "c65395858a38d8ff",
-				"mainnet-fork": "f8d6e0586b0a20c7",
+				"mainnet-fork": "c65395858a38d8ff",
 				"testing": "0000000000000007"
 			}
 		},
@@ -31,7 +31,7 @@
 			"source": "cadence/contracts/ScheduledManagerV0_1.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"mainnet-fork": "f8d6e0586b0a20c7",
+				"mainnet-fork": "c65395858a38d8ff",
 				"testing": "0000000000000007"
 			}
 		},
@@ -40,7 +40,47 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "c65395858a38d8ff",
-				"mainnet-fork": "f8d6e0586b0a20c7",
+				"mainnet-fork": "c65395858a38d8ff",
+				"testing": "0000000000000007"
+			}
+		},
+		"SolverRegistryV0_2": {
+			"source": "cadence/contracts/SolverRegistryV0_2.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "c65395858a38d8ff",
+				"testing": "0000000000000007"
+			}
+		},
+		"BidManagerV0_2": {
+			"source": "cadence/contracts/BidManagerV0_2.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "c65395858a38d8ff",
+				"testing": "0000000000000007"
+			}
+		},
+		"IntentExecutorV0_2": {
+			"source": "cadence/contracts/IntentExecutorV0_2.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "c65395858a38d8ff",
+				"testing": "0000000000000007"
+			}
+		},
+		"IntentMarketplaceV0_2": {
+			"source": "cadence/contracts/IntentMarketplaceV0_2.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "c65395858a38d8ff",
+				"testing": "0000000000000007"
+			}
+		},
+		"ScheduledManagerV0_2": {
+			"source": "cadence/contracts/ScheduledManagerV0_2.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "c65395858a38d8ff",
 				"testing": "0000000000000007"
 			}
 		}
@@ -53,6 +93,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "f233dcee88fe0abe",
+				"mainnet-fork": "f233dcee88fe0abe",
 				"testnet": "9a0766d93b6608b7"
 			}
 		},
@@ -63,7 +104,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "e467b9dd11fa00df",
-				"mainnet-fork": "f8d6e0586b0a20c7",
+				"mainnet-fork": "e467b9dd11fa00df",
 				"testing": "f8d6e0586b0a20c7",
 				"testnet": "8c5303eaa26202d6"
 			}
@@ -95,7 +136,7 @@
 			"aliases": {
 				"emulator": "0ae53cb6e3f42a79",
 				"mainnet": "1654653399040a61",
-				"mainnet-fork": "0ae53cb6e3f42a79",
+				"mainnet-fork": "1654653399040a61",
 				"testing": "0ae53cb6e3f42a79",
 				"testnet": "7e60df042a9c0868"
 			}
@@ -107,7 +148,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "e467b9dd11fa00df",
-				"mainnet-fork": "f8d6e0586b0a20c7",
+				"mainnet-fork": "e467b9dd11fa00df",
 				"testing": "f8d6e0586b0a20c7",
 				"testnet": "8c5303eaa26202d6"
 			}
@@ -119,7 +160,7 @@
 			"aliases": {
 				"emulator": "ee82856bf20e2aa6",
 				"mainnet": "f233dcee88fe0abe",
-				"mainnet-fork": "ee82856bf20e2aa6",
+				"mainnet-fork": "f233dcee88fe0abe",
 				"testing": "ee82856bf20e2aa6",
 				"testnet": "9a0766d93b6608b7"
 			}
@@ -188,6 +229,24 @@
 				"hashAlgorithm": "SHA2_256",
 				"privateKey": "$DEPLOYER_PRIVATE_KEY"
 			}
+		},
+		"fork-service-account": {
+			"address": "e467b9dd11fa00df",
+			"key": {
+				"type": "hex",
+				"signatureAlgorithm": "ECDSA_P256",
+				"hashAlgorithm": "SHA3_256",
+				"privateKey": "04d5c7ee78cf8ebe21a91577ba447add840a2276ea3dd8ea001a0b9fa45a0d65"
+			}
+		},
+		"fork-deployer-account": {
+			"address": "c65395858a38d8ff",
+			"key": {
+				"type": "hex",
+				"signatureAlgorithm": "ECDSA_secp256k1",
+				"hashAlgorithm": "SHA2_256",
+				"privateKey": "$DEPLOYER_PRIVATE_KEY"
+			}
 		}
 	},
 	"deployments": {
@@ -196,7 +255,12 @@
 				"IntentMarketplaceV0_1",
 				"SolverRegistryV0_1",
 				"BidManagerV0_1",
-				"IntentExecutorV0_1"
+				"IntentExecutorV0_1",
+				"SolverRegistryV0_2",
+				"IntentMarketplaceV0_2",
+				"BidManagerV0_2",
+				"IntentExecutorV0_2",
+				"ScheduledManagerV0_2"
 			]
 		},
 		"mainnet": {
@@ -204,7 +268,12 @@
 				"IntentMarketplaceV0_1",
 				"SolverRegistryV0_1",
 				"BidManagerV0_1",
-				"IntentExecutorV0_1"
+				"IntentExecutorV0_1",
+				"SolverRegistryV0_2",
+				"IntentMarketplaceV0_2",
+				"BidManagerV0_2",
+				"IntentExecutorV0_2",
+				"ScheduledManagerV0_2"
 			]
 		},
 		"mainnet-fork": {
