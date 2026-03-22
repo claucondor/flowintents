@@ -60,6 +60,11 @@ access(all) contract IntentMarketplaceV0_1 {
     access(all) let MarketplaceStoragePath: StoragePath
     access(all) let MarketplacePublicPath:  PublicPath
 
+    /// The address of the account that deployed this contract.
+    /// Exposed so transactions can locate the Marketplace public capability
+    /// without needing to access the restricted `self.account` field.
+    access(all) let deployerAddress: Address
+
     // -------------------------------------------------------------------------
     // Intent Resource
     // -------------------------------------------------------------------------
@@ -539,6 +544,7 @@ access(all) contract IntentMarketplaceV0_1 {
         self.intents <- {}
         self.MarketplaceStoragePath = /storage/FlowIntentsMarketplace
         self.MarketplacePublicPath  = /public/FlowIntentsMarketplace
+        self.deployerAddress = self.account.address
 
         self.account.storage.save(
             <- create Marketplace(),

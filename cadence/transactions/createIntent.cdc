@@ -17,10 +17,10 @@ transaction(
     let signerAddress: Address
 
     prepare(signer: auth(Storage, BorrowValue) &Account) {
-        // Borrow the marketplace
-        self.marketplace = IntentMarketplaceV0_1.account.storage
-            .borrow<&IntentMarketplaceV0_1.Marketplace>(
-                from: IntentMarketplaceV0_1.MarketplaceStoragePath
+        // Borrow the marketplace via public capability
+        self.marketplace = getAccount(IntentMarketplaceV0_1.deployerAddress)
+            .capabilities.borrow<&IntentMarketplaceV0_1.Marketplace>(
+                IntentMarketplaceV0_1.MarketplacePublicPath
             ) ?? panic("Cannot borrow IntentMarketplaceV0_1")
 
         // Withdraw principal from signer's FlowToken vault
@@ -37,9 +37,9 @@ transaction(
         let intentID = self.marketplace.createIntent(
             ownerAddress: self.signerAddress,
             vault: <- self.vault,
-            targetAPY: self.targetAPY,
-            durationDays: self.durationDays,
-            expiryBlock: self.expiryBlock
+            targetAPY: targetAPY,
+            durationDays: durationDays,
+            expiryBlock: expiryBlock
         )
         log("Intent created with ID: ".concat(intentID.toString()))
     }
