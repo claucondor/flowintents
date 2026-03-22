@@ -7,6 +7,7 @@ import {AgentReputationRegistry} from "../src/AgentReputationRegistry.sol";
 import {AgentValidationRegistry} from "../src/AgentValidationRegistry.sol";
 import {FlowIntentsComposer}     from "../src/FlowIntentsComposer.sol";
 import {FlowIntentsComposerV2}   from "../src/FlowIntentsComposerV2.sol";
+import {EVMBidRelay}             from "../src/EVMBidRelay.sol";
 
 /// @title Deploy
 /// @notice Deploys all FlowIntents EVM contracts in the correct dependency order:
@@ -98,6 +99,12 @@ contract Deploy is Script {
         FlowIntentsComposerV2 composerV2 = new FlowIntentsComposerV2(deployer, address(identityReg));
         console2.log("FlowIntentsComposerV2 deployed at:", address(composerV2));
 
+        // ------------------------------------------------------------------
+        // Step 6: EVMBidRelay (permissionless EVM bid board for EVM-only solvers)
+        // ------------------------------------------------------------------
+        EVMBidRelay evmBidRelay = new EVMBidRelay();
+        console2.log("EVMBidRelay deployed at:", address(evmBidRelay));
+
         vm.stopBroadcast();
 
         // ------------------------------------------------------------------
@@ -110,7 +117,8 @@ contract Deploy is Script {
             address(reputationReg),
             address(validationReg),
             address(composer),
-            address(composerV2)
+            address(composerV2),
+            address(evmBidRelay)
         );
 
         // Print summary
@@ -121,6 +129,7 @@ contract Deploy is Script {
         console2.log("AgentValidationRegistry:  ", address(validationReg));
         console2.log("FlowIntentsComposer:      ", address(composer));
         console2.log("FlowIntentsComposerV2:    ", address(composerV2));
+        console2.log("EVMBidRelay:              ", address(evmBidRelay));
         console2.log("\nKnown Flow EVM addresses:");
         console2.log("LayerZero EndpointV2:     ", LAYERZERO_ENDPOINT);
         console2.log("MORE Protocol Pool:       ", MORE_POOL);
@@ -145,7 +154,8 @@ contract Deploy is Script {
         address reputationReg,
         address validationReg,
         address composer,
-        address composerV2
+        address composerV2,
+        address evmBidRelay
     ) internal {
         string memory json = string.concat(
             '{\n',
@@ -157,7 +167,8 @@ contract Deploy is Script {
             '    "AgentReputationRegistry": "', _addr2str(reputationReg), '",\n',
             '    "AgentValidationRegistry": "', _addr2str(validationReg), '",\n',
             '    "FlowIntentsComposer":     "', _addr2str(composer),      '",\n',
-            '    "FlowIntentsComposerV2":   "', _addr2str(composerV2),    '"\n',
+            '    "FlowIntentsComposerV2":   "', _addr2str(composerV2),    '",\n',
+            '    "EVMBidRelay":             "', _addr2str(evmBidRelay),   '"\n',
             '  },\n',
             '  "knownAddresses": {\n',
             '    "LayerZeroEndpointV2": "', _addr2str(LAYERZERO_ENDPOINT), '",\n',

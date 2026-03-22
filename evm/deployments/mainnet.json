@@ -1,0 +1,20 @@
+{
+  "network": "flow-evm-mainnet",
+  "chainId": 747,
+  "deployedAt": 1774208020,
+  "contracts": {
+    "AgentIdentityRegistry":   "0xA60c41C1C177cB38bcCEE06Da5360eCcaFB40223",
+    "AgentReputationRegistry": "0x1b0e6033039dC458fbBdf52E1B0346aEEb94d112",
+    "AgentValidationRegistry": "0x0f23a84E46fc098EfeE77281742ef8dBcDce74b1",
+    "FlowIntentsComposer":     "0x2253371309477118DEfbf751A4aC99f3A65b8a7e",
+    "FlowIntentsComposerV2":   "0x37c6F3A5F7C27274112eB903242cD9a82239F5B9",
+    "EVMBidRelay":             "0x4fc88d2ed70D31303784C6963F245ee18e0d1784"
+  },
+  "knownAddresses": {
+    "LayerZeroEndpointV2": "0xcb566e3B6934Fa77258d68ea18E931fa75e1aaAa",
+    "MOREProtocolPool":    "0xbC92aaC2DBBF42215248B5688eB3D3d2b32F2c8d",
+    "WFLOW":               "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e",
+    "stgUSDC":             "0xF1815bd50389c46847f0Bda824eC8da914045D14",
+    "ankrFLOW":            "0x1b97100eA1D7126C4d60027e231EA4CB25314bdb"
+  }
+}
