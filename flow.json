@@ -17,13 +17,6 @@
 				"testing": "0000000000000007"
 			}
 		},
-		"IntentMarketplaceV0_2": {
-			"source": "cadence/contracts/legacy/IntentMarketplaceV0_2.cdc",
-			"aliases": {
-				"mainnet": "c65395858a38d8ff",
-				"testing": "0000000000000007"
-			}
-		},
 		"IntentExecutorV0_1": {
 			"source": "cadence/contracts/IntentExecutorV0_1.cdc",
 			"aliases": {
@@ -47,6 +40,13 @@
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "c65395858a38d8ff",
 				"mainnet-fork": "c65395858a38d8ff",
+				"testing": "0000000000000007"
+			}
+		},
+		"IntentMarketplaceV0_2": {
+			"source": "cadence/contracts/legacy/IntentMarketplaceV0_2.cdc",
+			"aliases": {
+				"mainnet": "c65395858a38d8ff",
 				"testing": "0000000000000007"
 			}
 		},
