@@ -17,6 +17,13 @@
 				"testing": "0000000000000007"
 			}
 		},
+		"IntentMarketplaceV0_2": {
+			"source": "cadence/contracts/legacy/IntentMarketplaceV0_2.cdc",
+			"aliases": {
+				"mainnet": "c65395858a38d8ff",
+				"testing": "0000000000000007"
+			}
+		},
 		"IntentExecutorV0_1": {
 			"source": "cadence/contracts/IntentExecutorV0_1.cdc",
 			"aliases": {
@@ -26,8 +33,8 @@
 				"testing": "0000000000000007"
 			}
 		},
-		"IntentExecutorV0_2": {
-			"source": "cadence/contracts/IntentExecutorV0_2.cdc",
+		"IntentExecutorV0_3": {
+			"source": "cadence/contracts/IntentExecutorV0_3.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "c65395858a38d8ff",
@@ -43,8 +50,8 @@
 				"testing": "0000000000000007"
 			}
 		},
-		"IntentMarketplaceV0_2": {
-			"source": "cadence/contracts/IntentMarketplaceV0_2.cdc",
+		"IntentMarketplaceV0_3": {
+			"source": "cadence/contracts/IntentMarketplaceV0_3.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "c65395858a38d8ff",
@@ -59,8 +66,8 @@
 				"testing": "0000000000000007"
 			}
 		},
-		"ScheduledManagerV0_2": {
-			"source": "cadence/contracts/ScheduledManagerV0_2.cdc",
+		"ScheduledManagerV0_3": {
+			"source": "cadence/contracts/ScheduledManagerV0_3.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "c65395858a38d8ff",
@@ -253,9 +260,10 @@
 				"IntentExecutorV0_1",
 				"SolverRegistryV0_2",
 				"IntentMarketplaceV0_2",
+				"IntentMarketplaceV0_3",
 				"BidManagerV0_2",
-				"IntentExecutorV0_2",
-				"ScheduledManagerV0_2"
+				"IntentExecutorV0_3",
+				"ScheduledManagerV0_3"
 			]
 		},
 		"mainnet": {
@@ -265,10 +273,10 @@
 				"BidManagerV0_1",
 				"IntentExecutorV0_1",
 				"SolverRegistryV0_2",
-				"IntentMarketplaceV0_2",
+				"IntentMarketplaceV0_3",
 				"BidManagerV0_2",
-				"IntentExecutorV0_2",
-				"ScheduledManagerV0_2"
+				"IntentExecutorV0_3",
+				"ScheduledManagerV0_3"
 			]
 		},
 		"mainnet-fork": {
