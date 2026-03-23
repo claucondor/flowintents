@@ -8,7 +8,8 @@
     "AgentValidationRegistry": "0x0f23a84E46fc098EfeE77281742ef8dBcDce74b1",
     "FlowIntentsComposer":     "0x2253371309477118DEfbf751A4aC99f3A65b8a7e",
     "FlowIntentsComposerV2":   "0x37c6F3A5F7C27274112eB903242cD9a82239F5B9",
-    "EVMBidRelay":             "0x4fc88d2ed70D31303784C6963F245ee18e0d1784"
+    "EVMBidRelay":             "0x4fc88d2ed70D31303784C6963F245ee18e0d1784",
+    "FlowIntentsComposerV3":   "0xb058B508c00e7ab94c33c0BA1d5ac87e5512b792"
   },
   "knownAddresses": {
     "LayerZeroEndpointV2": "0xcb566e3B6934Fa77258d68ea18E931fa75e1aaAa",
