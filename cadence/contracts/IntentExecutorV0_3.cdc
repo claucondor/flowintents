@@ -53,8 +53,9 @@ access(all) contract IntentExecutorV0_3 {
 
     /// Configurable EVM contract addresses and selectors.
     /// Keys:
-    ///   "composer"                  -> FlowIntentsComposer address (selector unused, batch from bid)
-    ///   "composer_getIntentBalance" -> FlowIntentsComposer.getIntentBalance(uint256)
+    ///   "composer"                             -> FlowIntentsComposerV4 address (selector unused, batch from bid)
+    ///   "composer_getIntentBalance"            -> FlowIntentsComposerV4.getIntentBalance(uint256)
+    ///   "composer_executeStrategyWithFunds"    -> FlowIntentsComposerV4.executeStrategyWithFunds(bytes) selector: 0x7954fae9
     access(self) var evmConfig: {String: EVMConfig}
 
     // -------------------------------------------------------------------------
@@ -75,18 +76,15 @@ access(all) contract IntentExecutorV0_3 {
     access(all) resource Admin {
         access(all) fun setComposerAddress(addr: String) {
             IntentExecutorV0_3.composerAddress = addr
-            // Also update evmConfig
-            if let existing = IntentExecutorV0_3.evmConfig["composer"] {
-                IntentExecutorV0_3.evmConfig["composer"] = EVMConfig(
-                    address: addr,
-                    selector: existing.selector
-                )
-            }
-            if let existing = IntentExecutorV0_3.evmConfig["composer_getIntentBalance"] {
-                IntentExecutorV0_3.evmConfig["composer_getIntentBalance"] = EVMConfig(
-                    address: addr,
-                    selector: existing.selector
-                )
+            // Also update evmConfig for all composer-related keys
+            let composerKeys = ["composer", "composer_getIntentBalance", "composer_executeStrategyWithFunds"]
+            for key in composerKeys {
+                if let existing = IntentExecutorV0_3.evmConfig[key] {
+                    IntentExecutorV0_3.evmConfig[key] = EVMConfig(
+                        address: addr,
+                        selector: existing.selector
+                    )
+                }
             }
         }
 
@@ -313,7 +311,62 @@ access(all) contract IntentExecutorV0_3 {
     // V0_2: Execute intent with gas escrow accounting
     // -------------------------------------------------------------------------
 
+    /// Encode calldata for executeStrategyWithFunds(bytes encodedBatch).
+    /// Selector: 0x7954fae9
+    /// ABI encoding: selector (4 bytes) + offset (32 bytes) + length (32 bytes) + data (padded)
+    access(self) fun encodeExecuteStrategyWithFunds(encodedBatch: [UInt8]): [UInt8] {
+        // Function selector for executeStrategyWithFunds(bytes): 0x7954fae9
+        var calldata: [UInt8] = [0x79, 0x54, 0xfa, 0xe9]
+
+        // ABI offset for dynamic bytes parameter = 0x20 (32)
+        var offsetBytes: [UInt8] = []
+        var j = 0
+        while j < 32 {
+            offsetBytes.insert(at: 0, 0)
+            j = j + 1
+        }
+        offsetBytes[31] = 0x20  // offset = 32
+        calldata.appendAll(offsetBytes)
+
+        // ABI length of the bytes parameter
+        let batchLen = encodedBatch.length
+        var lenBytes: [UInt8] = []
+        var tmp: Int = batchLen
+        j = 0
+        while j < 32 {
+            lenBytes.insert(at: 0, UInt8(tmp & 0xff))
+            tmp = tmp >> 8
+            j = j + 1
+        }
+        calldata.appendAll(lenBytes)
+
+        // The bytes data itself
+        calldata.appendAll(encodedBatch)
+
+        // Pad to multiple of 32 bytes
+        let remainder = batchLen % 32
+        if remainder != 0 {
+            let padCount = 32 - remainder
+            j = 0
+            while j < padCount {
+                calldata.append(0)
+                j = j + 1
+            }
+        }
+
+        return calldata
+    }
+
     /// Execute a winning intent via BidManagerV0_2 + IntentMarketplaceV0_3.
+    ///
+    /// For Cadence-side intents (principalSide == cadence):
+    ///   1. Withdraw principal from the Cadence vault.
+    ///   2. Deposit it into the COA's EVM balance via coa.deposit().
+    ///   3. Call ComposerV4.executeStrategyWithFunds(encodedBatch) sending the bridged FLOW as msg.value.
+    ///
+    /// For EVM-side intents (principalSide == evm):
+    ///   Funds are already in ComposerV4. Use the existing coa.call() path.
+    ///
     /// After successful EVM execution:
     ///   Transfer the FULL gas escrow to the solver (no refund to user).
     ///   Solver profit = gasEscrow - actual gas cost (internal to solver).
@@ -328,7 +381,7 @@ access(all) contract IntentExecutorV0_3 {
                 "IntentExecutorV0_3: composerAddress not set"
         }
 
-        // Verify state via V0_2 marketplace
+        // Verify state via V0_3 marketplace
         let intent = IntentMarketplaceV0_3.getIntent(id: intentID)
             ?? panic("Intent does not exist in V0_2 marketplace")
         assert(
@@ -349,26 +402,63 @@ access(all) contract IntentExecutorV0_3 {
 
         let composerEVMAddress = IntentExecutorV0_3.parseEVMAddress(IntentExecutorV0_3.composerAddress)
 
-        // Make the COA call to FlowIntentsComposer.sol
-        let result = coa.call(
-            to: composerEVMAddress,
-            data: encodedBatch,
-            gasLimit: 500000,
-            value: EVM.Balance(attoflow: 0)
-        )
-
-        assert(
-            result.status == EVM.Status.successful,
-            message: "FlowIntentsComposer call failed -- EVM reverted"
-        )
-
-        // Borrow V0_2 marketplace
+        // Borrow the marketplace to withdraw principal (needed for cadence-side intents)
         let marketplace = getAccount(self.account.address)
             .capabilities.borrow<&IntentMarketplaceV0_3.Marketplace>(
                 IntentMarketplaceV0_3.MarketplacePublicPath
             ) ?? panic("Cannot borrow MarketplaceV0_2")
 
-        // Update intent status to Active
+        var result: EVM.Result? = nil
+
+        if intent.principalSide == IntentMarketplaceV0_3.PrincipalSide.cadence {
+            // ----------------------------------------------------------------
+            // Cadence-side intent: bridge principal FLOW to EVM then execute
+            // ----------------------------------------------------------------
+
+            // 1. Withdraw principal from the Cadence vault
+            let principalVault <- marketplace.withdrawPrincipalFromIntent(id: intentID)
+            let principalBalance = principalVault.balance
+
+            // 2. Convert UFix64 → attoFLOW
+            //    UFix64 has 8 decimal places. attoFLOW has 18.
+            //    Multiply by 10^10 = 10_000_000_000
+            //    To avoid UFix64 overflow, use: UInt(balance * 1_000_000_000.0) * 10
+            let attoflow: UInt = UInt(principalBalance * 1_000_000_000.0) * 10
+
+            // 3. Deposit FLOW from Cadence vault into COA's EVM balance
+            let flowVault <- principalVault as! @FlowToken.Vault
+            coa.deposit(from: <- flowVault)
+
+            // 4. Encode executeStrategyWithFunds(bytes) calldata
+            let calldata = IntentExecutorV0_3.encodeExecuteStrategyWithFunds(encodedBatch: encodedBatch)
+
+            // 5. Call executeStrategyWithFunds on ComposerV4, forwarding bridged FLOW as msg.value
+            result = coa.call(
+                to: composerEVMAddress,
+                data: calldata,
+                gasLimit: 500000,
+                value: EVM.Balance(attoflow: attoflow)
+            )
+        } else {
+            // ----------------------------------------------------------------
+            // EVM-side intent: funds already in ComposerV4, call with encodedBatch directly
+            // ----------------------------------------------------------------
+            result = coa.call(
+                to: composerEVMAddress,
+                data: encodedBatch,
+                gasLimit: 500000,
+                value: EVM.Balance(attoflow: 0)
+            )
+        }
+
+        let evmResult = result ?? panic("EVM call result is nil")
+
+        assert(
+            evmResult.status == EVM.Status.successful,
+            message: "FlowIntentsComposer call failed -- EVM reverted"
+        )
+
+        // Update intent status to Active (marketplace already borrowed above)
         marketplace.setActiveOnIntent(id: intentID)
         marketplace.setExecutedByOnIntent(id: intentID, executorAddress: solverAddress)
 
@@ -399,7 +489,7 @@ access(all) contract IntentExecutorV0_3 {
             solverAddress: solverAddress,
             solverEVMAddress: winningBid.solverEVMAddress,
             composerAddress: IntentExecutorV0_3.composerAddress,
-            gasUsed: result.gasUsed
+            gasUsed: evmResult.gasUsed
         )
     }
 
@@ -422,6 +512,9 @@ access(all) contract IntentExecutorV0_3 {
         self.composerAddress = "0x0000000000000000000000000000000000000000"
 
         // Initialize EVMConfig with default selectors and zero addresses
+        // Selectors computed via `cast sig`:
+        //   getIntentBalance(uint256)         = 0x1a2b3c4d  (placeholder — update via Admin)
+        //   executeStrategyWithFunds(bytes)   = 0x7954fae9
         self.evmConfig = {
             "composer": EVMConfig(
                 address: "0x0000000000000000000000000000000000000000",
@@ -430,6 +523,10 @@ access(all) contract IntentExecutorV0_3 {
             "composer_getIntentBalance": EVMConfig(
                 address: "0x0000000000000000000000000000000000000000",
                 selector: [0x1a, 0x2b, 0x3c, 0x4d]  // placeholder for getIntentBalance(uint256)
+            ),
+            "composer_executeStrategyWithFunds": EVMConfig(
+                address: "0x0000000000000000000000000000000000000000",
+                selector: [0x79, 0x54, 0xfa, 0xe9]  // executeStrategyWithFunds(bytes)
             )
         }
 
