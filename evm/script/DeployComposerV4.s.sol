@@ -9,8 +9,8 @@ contract DeployComposerV4 is Script {
     address public constant AGENT_IDENTITY_REGISTRY = 0xA60c41C1C177cB38bcCEE06Da5360eCcaFB40223;
 
     function run() external {
-        address deployer = vm.envOr("DEPLOYER", msg.sender);
         uint256 deployerKey = uint256(vm.envBytes32("DEPLOYER_PRIVATE_KEY"));
+        address deployer = vm.envOr("DEPLOYER", vm.addr(deployerKey));
 
         vm.startBroadcast(deployerKey);
 

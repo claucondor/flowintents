@@ -203,8 +203,7 @@ transaction(
                 targetAPY: targetAPY,
                 durationDays: durationDays,
                 expiryBlock: expiryBlock,
-                gasEscrowVault: <- gasEscrowVault,
-                recipientEVMAddress: recipientEVMAddress
+                gasEscrowVault: <- gasEscrowVault
             )
             log(
                 "EVM intent "
@@ -221,8 +220,7 @@ transaction(
                 maxFeeBPS: maxFeeBPS,
                 durationDays: durationDays,
                 expiryBlock: expiryBlock,
-                gasEscrowVault: <- gasEscrowVault,
-                recipientEVMAddress: recipientEVMAddress
+                gasEscrowVault: <- gasEscrowVault
             )
             log(
                 "EVM intent "

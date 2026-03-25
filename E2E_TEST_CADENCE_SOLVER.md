@@ -224,6 +224,67 @@ flow transactions send cadence/transactions/executeIntentV0_3.cdc \
 
 ---
 
+---
+
+## Test C — Cadence SWAP Intent with WFLOW Wrap + PunchSwap Batch
+
+**Status: VERIFIED on mainnet** ✓
+**Intent ID**: 3 on IntentMarketplaceV0_3
+**Create tx**: `2c3bb3badead5850a9eed6481b10281c9c9ae0a0d5a01b8c1ea409f7ebd09b1c`
+**Execute tx**: `a4d411296af5bd68d1b055c73e05107e846a4aca51654867915aaff126bdaf35`
+
+User creates a SWAP intent (0.2 FLOW, minAmountOut=0.19). Solver executes a 3-step batch:
+1. WFLOW.deposit{value: 0.2 FLOW}() — wraps all 0.2 FLOW to WFLOW
+2. WFLOW.approve(PUNCHSWAP_ROUTER, 0.1e18) — approve 0.1 WFLOW for swap
+3. Router.swapExactTokensForTokens(0.1e18, 2981, [WFLOW, stgUSDC], COA, deadline)
+
+Result: 3138 stgUSDC + 0.1 WFLOW swept to COA (`0x000000000000000000000002858DdA8E37568bDf`).
+
+**Setup required for this test:**
+- ComposerV4 redeployed at `0x5cc14D3509639a819f4e8f796128Fcc1C9576D95` (owner = deployer EVM key)
+- `setAuthorizedCOA` set to COA address
+- `setExecutorV0_3ComposerV4.cdc` run to update IntentExecutorV0_3 to new address + selector
+- IntentExecutorV0_3 updated on-chain (via `flow accounts update-contract`) to use new `executeStrategyWithFunds(bytes,address)` selector `0x7661a94a` and COA as recipient
+- Batch deadline fixed to `4102444800` (year 2100) to avoid Uniswap V2 EXPIRED revert
+
+**Results:**
+- stgUSDC at COA: 3138 units (6 decimals = 0.003138 USDC)
+- WFLOW at COA: 0.1e18 (0.1 WFLOW)
+- Gas escrow paid to solver: 0.01 FLOW
+- gasUsed: 190,123
+
+---
+
+## Test D — EVM SWAP Intent Relayed to Cadence, same wrap+PunchSwap execution
+
+**Status: VERIFIED on mainnet** ✓
+**EVM Intent ID**: 0 on EVMBidRelay
+**Cadence Intent ID**: 5 on IntentMarketplaceV0_3
+**EVM submit tx**: `0x21f5d74207c3c5bf7f07a1cf64da956330ec06bf9f4c36245f3365ad03a73d73`
+**Relay tx**: `13766bdbf26f23c3546b8065327a685aaefcff351090f6687ec740434d9e2768`
+**Execute tx**: `bbe130936c1cda5e2a2e22c5427881467077c074f4693e8aac59580ef5bc4566`
+
+EVM user (`0xA0cD6ffcb6577BcF654efeB5e8C3F4DB89FBcda3`) submits a swap intent via
+`EVMBidRelay.submitIntent{value: 0.21 FLOW}()` — principal=0.2, gasEscrow=0.01.
+The relayer runs `relayEVMIntent.cdc` which:
+1. Calls `EVMBidRelay.releaseToCOA(0)` — moves 0.21 FLOW to COA's EVM balance
+2. Withdraws from COA to Cadence vault
+3. Creates a native Cadence swap intent (principalSide=cadence)
+
+Same bid/execute flow as Test C runs next. Output: 3028 stgUSDC + 0.1 WFLOW at COA.
+
+**Known limitation:**
+Since `IntentMarketplaceV0_3.createSwapIntent()` (deployed version) doesn't support
+`recipientEVMAddress`, the output tokens land at the relayer's COA, not the original
+EVM creator's address. Future upgrade of IntentMarketplaceV0_3 can add this routing.
+
+**Results:**
+- stgUSDC at COA: +3028 units (cumulative: 6166 after Tests C+D)
+- WFLOW at COA: +0.1e18 (cumulative: 0.2 WFLOW after Tests C+D)
+- gasUsed: 161,059
+
+---
+
 ## Contracts on Mainnet
 
 | Contract | Type | Address |
@@ -232,9 +293,12 @@ flow transactions send cadence/transactions/executeIntentV0_3.cdc \
 | BidManagerV0_3 | Cadence | `0xc65395858a38d8ff` |
 | IntentExecutorV0_3 | Cadence | `0xc65395858a38d8ff` |
 | SolverRegistryV0_1 | Cadence | `0xc65395858a38d8ff` |
-| FlowIntentsComposerV4 | Flow EVM | `0xe02fE15f26A3B49cfdd8De16A1352aCFf0F880e1` |
+| EVMBidRelay | Flow EVM | `0x0f58eA537424C261FB55B45B77e5a25823077E05` |
+| FlowIntentsComposerV4 (active) | Flow EVM | `0x5cc14D3509639a819f4e8f796128Fcc1C9576D95` |
 | AgentIdentityRegistry | Flow EVM | `0xA60c41C1C177cB38bcCEE06Da5360eCcaFB40223` |
 | WFLOW | Flow EVM | `0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e` |
+| stgUSDC | Flow EVM | `0xF1815bd50389c46847f0Bda824eC8da914045D14` |
+| PunchSwap V2 Router | Flow EVM | `0xf45AFe28fd5519d5f8C1d4787a4D5f724C0eFa4d` |
 
 ---
 
@@ -248,6 +312,11 @@ flow transactions send cadence/transactions/executeIntentV0_3.cdc \
 | `FlowIntentsComposer call failed -- EVM reverted` | `authorizedCOA` in ComposerV4 was zero (never set post-deploy) | Call `setAuthorizedCOA(coaEVMAddress)` with deployer key |
 | `FlowIntentsComposer call failed -- EVM reverted` | IntentExecutorV0_3 `composerAddress` pointed to old ComposerV4 | Run `setExecutorV0_3ComposerV4.cdc` admin tx with new address |
 | `FlowIntentsComposer call failed -- EVM reverted` | UFix64→attoFLOW bug: `UInt(balance * 1e9) * 10 = 10^10` (sends 0.00000001 FLOW) | Fix: `UInt(balance * 100_000_000.0) * 10_000_000_000 = 10^18` |
+| `FlowIntentsComposer call failed -- EVM reverted` | PunchSwap deadline was `1801` (forge view script uses block.timestamp=1) | Set deadline to far-future constant: `4102444800` (year 2100) |
+| `cannot deploy invalid contract: found new field recipientEVMAddress` | Cadence forbids adding fields to deployed resource types | Remove `recipientEVMAddress` from resource; pass as separate tx param or via new contract |
+| `OwnableUnauthorizedAccount` on `setAuthorizedCOA` | New ComposerV4 deployed with wrong `initialOwner` (script used `msg.sender` before `startBroadcast`) | Fix deploy script: use `vm.addr(deployerKey)` for `initialOwner` |
+| `expected up to 7, got 8` on `createSwapIntent` | Deployed marketplace has 7-param `createSwapIntent`, source had 8 (added `recipientEVMAddress`) | Remove `recipientEVMAddress` from tx call; matches deployed contract |
+| `addrPadded.appendAll(recipient.bytes): expected [UInt8], got [UInt8; 20]` | `EVM.EVMAddress.bytes` is fixed-size `[UInt8; 20]`, incompatible with `appendAll([UInt8])` | Append each of 20 bytes individually with `calldata.append(addrBytes[i])` |
 
 ---
 
@@ -258,3 +327,5 @@ flow transactions send cadence/transactions/executeIntentV0_3.cdc \
 | 0 | YIELD | Executed ✓ | 1 FLOW | 5% APY, 7d | `095409e4...` |
 | 1 | YIELD | Executed ✓ | 0.1 FLOW | EVM-only solver (executeSwapDirect) | `ffdc7c61...` |
 | 1 | SWAP | Executed ✓ | 1 FLOW | 0.99 minOut, 0.3% fee, WFLOW wrap | `53bde6b5...` / exec `19591444...` |
+| 3 | SWAP | Executed ✓ | 0.2 FLOW | 0.19 minOut, wrap+PunchSwap batch | `2c3bb3ba...` / exec `a4d41129...` |
+| 5 | SWAP | Executed ✓ | 0.2 FLOW | EVM-relayed, wrap+PunchSwap batch | relay `13766bdb...` / exec `bbe13093...` |
