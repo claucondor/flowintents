@@ -125,7 +125,7 @@ contract FlowIntentsComposerV4Test is Test {
         emit FlowIntentsComposerV4.CadenceBridgeBatchExecuted(mockCOA, bridgedValue, 1);
 
         vm.prank(mockCOA);
-        bool success = composer.executeStrategyWithFunds{value: bridgedValue}(encodedBatch);
+        bool success = composer.executeStrategyWithFunds{value: bridgedValue}(encodedBatch, address(0));
 
         assertTrue(success, "executeStrategyWithFunds should return true");
     }
@@ -142,7 +142,7 @@ contract FlowIntentsComposerV4Test is Test {
 
         vm.prank(mockCOA);
         vm.expectRevert("FlowIntentsComposerV4: no FLOW bridged");
-        composer.executeStrategyWithFunds{value: 0}(abi.encode(steps));
+        composer.executeStrategyWithFunds{value: 0}(abi.encode(steps), address(0));
     }
 
     /// @notice executeStrategyWithFunds must revert for non-COA callers.
@@ -157,7 +157,7 @@ contract FlowIntentsComposerV4Test is Test {
 
         vm.prank(user1);
         vm.expectRevert("FlowIntentsComposerV4: not COA");
-        composer.executeStrategyWithFunds{value: 1 ether}(abi.encode(steps));
+        composer.executeStrategyWithFunds{value: 1 ether}(abi.encode(steps), address(0));
     }
 
     /// @notice COA can forward bridged FLOW through a batch step (e.g. deposit into strategy).
@@ -184,7 +184,7 @@ contract FlowIntentsComposerV4Test is Test {
         vm.deal(address(composer), 5 ether); // ensure composer has balance
 
         vm.prank(mockCOA);
-        bool success = composer.executeStrategyWithFunds{value: 5 ether}(encodedBatch);
+        bool success = composer.executeStrategyWithFunds{value: 5 ether}(encodedBatch, address(0));
         assertTrue(success);
     }
 
@@ -201,7 +201,8 @@ contract FlowIntentsComposerV4Test is Test {
             0,
             address(tokenB),  // tokenOut = tokenB
             100 ether,        // minAmountOut
-            7                 // 7 days
+            7,                // 7 days
+            address(0)        // recipientAddress = default (msg.sender)
         );
         assertEq(intentId, 1);
 
@@ -259,7 +260,8 @@ contract FlowIntentsComposerV4Test is Test {
             0,
             address(tokenB),
             100 ether,
-            7
+            7,
+            address(0)
         );
 
         FlowIntentsComposerV4.StrategyStep[] memory steps = new FlowIntentsComposerV4.StrategyStep[](1);
@@ -287,7 +289,8 @@ contract FlowIntentsComposerV4Test is Test {
             0,
             address(tokenB),
             100 ether, // minAmountOut = 100
-            7
+            7,
+            address(0)
         );
 
         FlowIntentsComposerV4.StrategyStep[] memory steps = new FlowIntentsComposerV4.StrategyStep[](1);
@@ -316,7 +319,8 @@ contract FlowIntentsComposerV4Test is Test {
             0,
             500, // 5% APY
             30,
-            0
+            0,
+            address(0)
         );
 
         FlowIntentsComposerV4.StrategyStep[] memory steps = new FlowIntentsComposerV4.StrategyStep[](1);
@@ -341,7 +345,7 @@ contract FlowIntentsComposerV4Test is Test {
         // --- submitIntent (yield) ---
         vm.prank(user1);
         uint256 yieldId = composer.submitIntent{value: 10 ether}(
-            address(0), 0, 500, 30, 0
+            address(0), 0, 500, 30, 0, address(0)
         );
         assertEq(yieldId, 1);
         assertEq(uint8(composer.getIntentStatus(yieldId)), uint8(FlowIntentsComposerV4.IntentStatus.PENDING));
@@ -349,7 +353,7 @@ contract FlowIntentsComposerV4Test is Test {
         // --- submitSwapIntent ---
         vm.prank(user2);
         uint256 swapId = composer.submitSwapIntent{value: 3 ether}(
-            address(0), 0, address(tokenB), 50 ether, 7
+            address(0), 0, address(tokenB), 50 ether, 7, address(0)
         );
         assertEq(swapId, 2);
         assertEq(uint8(composer.getIntentStatus(swapId)), uint8(FlowIntentsComposerV4.IntentStatus.PENDING));
@@ -409,7 +413,8 @@ contract FlowIntentsComposerV4Test is Test {
             0,
             address(tokenB),
             100 ether,
-            7
+            7,
+            address(0)
         );
 
         // COA marks it picked up
@@ -443,7 +448,7 @@ contract FlowIntentsComposerV4Test is Test {
     function test_cancelIntent_andWithdraw() public {
         vm.prank(user1);
         uint256 intentId = composer.submitSwapIntent{value: 5 ether}(
-            address(0), 0, address(tokenB), 100 ether, 7
+            address(0), 0, address(tokenB), 100 ether, 7, address(0)
         );
 
         vm.prank(user1);
@@ -469,7 +474,8 @@ contract FlowIntentsComposerV4Test is Test {
             0,
             500,  // 5% APY
             30,   // 30 days
-            0     // EVM_YIELD
+            0,    // EVM_YIELD
+            address(0) // recipientAddress = default
         );
         assertEq(intentId, 1);
         assertEq(uint8(composer.getIntentStatus(intentId)), uint8(FlowIntentsComposerV4.IntentStatus.PENDING));
@@ -509,7 +515,7 @@ contract FlowIntentsComposerV4Test is Test {
     function test_executeYieldDirect_notRegistered_reverts() public {
         vm.prank(user1);
         uint256 intentId = composer.submitIntent{value: 5 ether}(
-            address(0), 0, 500, 30, 0
+            address(0), 0, 500, 30, 0, address(0)
         );
 
         FlowIntentsComposerV4.StrategyStep[] memory steps = new FlowIntentsComposerV4.StrategyStep[](1);
@@ -533,7 +539,8 @@ contract FlowIntentsComposerV4Test is Test {
             0,
             address(tokenB),
             100 ether,
-            7
+            7,
+            address(0)
         );
 
         FlowIntentsComposerV4.StrategyStep[] memory steps = new FlowIntentsComposerV4.StrategyStep[](1);
@@ -554,7 +561,7 @@ contract FlowIntentsComposerV4Test is Test {
         // Submit YIELD intent
         vm.prank(user1);
         uint256 intentId = composer.submitIntent{value: 5 ether}(
-            address(0), 0, 500, 30, 0
+            address(0), 0, 500, 30, 0, address(0)
         );
 
         // COA marks it picked up then completed
@@ -582,11 +589,11 @@ contract FlowIntentsComposerV4Test is Test {
     /// @notice nextIntentId increments correctly across multiple submissions.
     function test_nextIntentId_increments() public {
         vm.startPrank(user1);
-        uint256 id1 = composer.submitIntent{value: 1 ether}(address(0), 0, 500, 30, 0);
+        uint256 id1 = composer.submitIntent{value: 1 ether}(address(0), 0, 500, 30, 0, address(0));
         uint256 id2 = composer.submitSwapIntent{value: 2 ether}(
-            address(0), 0, address(tokenB), 1 ether, 7
+            address(0), 0, address(tokenB), 1 ether, 7, address(0)
         );
-        uint256 id3 = composer.submitIntent{value: 1 ether}(address(0), 0, 800, 60, 0);
+        uint256 id3 = composer.submitIntent{value: 1 ether}(address(0), 0, 800, 60, 0, address(0));
         vm.stopPrank();
 
         assertEq(id1, 1);
@@ -601,7 +608,124 @@ contract FlowIntentsComposerV4Test is Test {
 
         vm.prank(mockCOA);
         vm.expectRevert("FlowIntentsComposerV4: empty batch");
-        composer.executeStrategyWithFunds{value: 1 ether}(abi.encode(steps));
+        composer.executeStrategyWithFunds{value: 1 ether}(abi.encode(steps), address(0));
+    }
+
+    // =========================================================================
+    // executeStrategyWithFunds sweep tests
+    // =========================================================================
+
+    /// @notice COA calls executeStrategyWithFunds with a recipient; output ERC-20 tokens
+    ///         held by the composer after the batch are swept to recipient.
+    ///
+    ///         The sweep scans step.target addresses and checks balanceOf(composer).
+    ///         This simulates a WFLOW-style strategy where the step target IS the output
+    ///         ERC-20 (e.g. WFLOW.deposit{value: X}() — target = WFLOW contract).
+    ///         We call tokenA.mint(composer, amount) as a stand-in for WFLOW.deposit().
+    function test_executeStrategyWithFunds_sweepsOutputTokensToRecipient() public {
+        address recipient = makeAddr("coaRecipient");
+
+        // The step target IS tokenA (simulating WFLOW.deposit-style strategy).
+        // We mock tokenA's "deposit()" to mint tokens into the composer.
+        // After the step, the sweep sees tokenA.balanceOf(composer) > 0 and transfers.
+        vm.mockCall(
+            address(tokenA),
+            abi.encodeWithSignature("deposit()"),
+            abi.encode(true)
+        );
+        // Pre-mint tokenA into composer to simulate what deposit() would produce
+        tokenA.mint(address(composer), 200 ether);
+
+        FlowIntentsComposerV4.StrategyStep[] memory steps = new FlowIntentsComposerV4.StrategyStep[](1);
+        steps[0] = FlowIntentsComposerV4.StrategyStep({
+            protocol: 3, // WFLOW_WRAP
+            target: address(tokenA), // step target IS the output ERC-20 (like WFLOW)
+            callData: abi.encodeWithSignature("deposit()"),
+            value: 1 ether // forwards 1 FLOW to tokenA.deposit()
+        });
+
+        bytes memory encodedBatch = abi.encode(steps);
+
+        uint256 recipientBalBefore = tokenA.balanceOf(recipient);
+
+        vm.prank(mockCOA);
+        bool success = composer.executeStrategyWithFunds{value: 1 ether}(encodedBatch, recipient);
+
+        assertTrue(success, "executeStrategyWithFunds should return true");
+
+        // Recipient should have received the swept tokenA
+        uint256 recipientBalAfter = tokenA.balanceOf(recipient);
+        assertEq(recipientBalAfter - recipientBalBefore, 200 ether, "Recipient should receive swept tokenA");
+
+        // Composer should hold none of the tokenA after sweep
+        assertEq(tokenA.balanceOf(address(composer)), 0, "Composer should hold no tokenA after sweep");
+    }
+
+    /// @notice executeStrategyWithFunds with recipient=address(0) does NOT sweep tokens.
+    function test_executeStrategyWithFunds_noSweepWhenRecipientZero() public {
+        // Mock tokenA.deposit() call and pre-mint to simulate WFLOW-style strategy
+        vm.mockCall(
+            address(tokenA),
+            abi.encodeWithSignature("deposit()"),
+            abi.encode(true)
+        );
+        tokenA.mint(address(composer), 50 ether);
+
+        FlowIntentsComposerV4.StrategyStep[] memory steps = new FlowIntentsComposerV4.StrategyStep[](1);
+        steps[0] = FlowIntentsComposerV4.StrategyStep({
+            protocol: 3, // WFLOW_WRAP
+            target: address(tokenA), // step target IS the output ERC-20
+            callData: abi.encodeWithSignature("deposit()"),
+            value: 1 ether
+        });
+
+        uint256 composerBalBefore = tokenA.balanceOf(address(composer));
+
+        vm.prank(mockCOA);
+        bool success = composer.executeStrategyWithFunds{value: 1 ether}(abi.encode(steps), address(0));
+
+        assertTrue(success);
+
+        // When recipient is address(0), no sweep happens — tokens stay in composer
+        uint256 composerBalAfter = tokenA.balanceOf(address(composer));
+        assertEq(composerBalAfter, composerBalBefore, "Tokens should stay in composer when recipient=address(0)");
+    }
+
+    /// @notice executeSwapDirect with recipientAddress override sends tokens to custom recipient.
+    function test_executeSwapDirect_recipientAddressOverride() public {
+        address customRecipient = makeAddr("customRecipient");
+
+        // user1 creates a swap intent with a custom recipient override
+        vm.prank(user1);
+        uint256 intentId = composer.submitSwapIntent{value: 5 ether}(
+            address(0),
+            0,
+            address(tokenB),
+            100 ether,
+            7,
+            customRecipient // output tokens go here instead of user1
+        );
+
+        MockSwapRouter mockRouter = new MockSwapRouter(
+            address(composer),
+            address(tokenB),
+            150 ether
+        );
+
+        FlowIntentsComposerV4.StrategyStep[] memory steps = new FlowIntentsComposerV4.StrategyStep[](1);
+        steps[0] = FlowIntentsComposerV4.StrategyStep({
+            protocol: 4,
+            target: address(mockRouter),
+            callData: abi.encodeWithSignature("executeSwap()"),
+            value: 0
+        });
+
+        vm.prank(registeredSolver);
+        composer.executeSwapDirect(intentId, abi.encode(steps), 150 ether);
+
+        // customRecipient should have received the tokenB, NOT user1
+        assertEq(tokenB.balanceOf(customRecipient), 150 ether, "Custom recipient should receive tokenB");
+        assertEq(tokenB.balanceOf(user1), 0, "User1 should NOT receive tokenB when recipientAddress is set");
     }
 
     /// @notice executeSwapDirect with identity registry at address(0) reverts.
@@ -613,7 +737,7 @@ contract FlowIntentsComposerV4Test is Test {
 
         vm.prank(user1);
         noRegComposer.submitSwapIntent{value: 5 ether}(
-            address(0), 0, address(tokenB), 100 ether, 7
+            address(0), 0, address(tokenB), 100 ether, 7, address(0)
         );
 
         FlowIntentsComposerV4.StrategyStep[] memory steps = new FlowIntentsComposerV4.StrategyStep[](1);

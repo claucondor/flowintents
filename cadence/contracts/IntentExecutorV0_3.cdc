@@ -55,7 +55,7 @@ access(all) contract IntentExecutorV0_3 {
     /// Keys:
     ///   "composer"                             -> FlowIntentsComposerV4 address (selector unused, batch from bid)
     ///   "composer_getIntentBalance"            -> FlowIntentsComposerV4.getIntentBalance(uint256)
-    ///   "composer_executeStrategyWithFunds"    -> FlowIntentsComposerV4.executeStrategyWithFunds(bytes) selector: 0x7954fae9
+    ///   "composer_executeStrategyWithFunds"    -> FlowIntentsComposerV4.executeStrategyWithFunds(bytes,address) selector: 0x7661a94a
     access(self) var evmConfig: {String: EVMConfig}
 
     // -------------------------------------------------------------------------
@@ -311,24 +311,42 @@ access(all) contract IntentExecutorV0_3 {
     // V0_2: Execute intent with gas escrow accounting
     // -------------------------------------------------------------------------
 
-    /// Encode calldata for executeStrategyWithFunds(bytes encodedBatch).
-    /// Selector: 0x7954fae9
-    /// ABI encoding: selector (4 bytes) + offset (32 bytes) + length (32 bytes) + data (padded)
-    access(self) fun encodeExecuteStrategyWithFunds(encodedBatch: [UInt8]): [UInt8] {
-        // Function selector for executeStrategyWithFunds(bytes): 0x7954fae9
-        var calldata: [UInt8] = [0x79, 0x54, 0xfa, 0xe9]
+    /// Encode calldata for executeStrategyWithFunds(bytes encodedBatch, address recipient).
+    /// Selector: 0x7661a94a  (keccak256("executeStrategyWithFunds(bytes,address)")[0:4])
+    ///
+    /// ABI encoding layout for (bytes, address):
+    ///   [0:4]    selector
+    ///   [4:36]   offset of bytes param = 0x40 (64) — points past the two head slots
+    ///   [36:68]  address (left-padded with 12 zero bytes to 32 bytes)
+    ///   [68:100] length of bytes data
+    ///   [100..]  bytes data (padded to 32-byte boundary)
+    access(self) fun encodeExecuteStrategyWithFunds(encodedBatch: [UInt8], recipient: EVM.EVMAddress): [UInt8] {
+        // Function selector for executeStrategyWithFunds(bytes,address): 0x7661a94a
+        var calldata: [UInt8] = [0x76, 0x61, 0xa9, 0x4a]
 
-        // ABI offset for dynamic bytes parameter = 0x20 (32)
+        // ABI head slot 1: offset of bytes param = 0x40 (64 decimal)
+        // Two head slots (bytes offset + address) = 64 bytes, so bytes data starts at offset 64.
         var offsetBytes: [UInt8] = []
         var j = 0
         while j < 32 {
             offsetBytes.insert(at: 0, 0)
             j = j + 1
         }
-        offsetBytes[31] = 0x20  // offset = 32
+        offsetBytes[31] = 0x40  // offset = 64
         calldata.appendAll(offsetBytes)
 
-        // ABI length of the bytes parameter
+        // ABI head slot 2: recipient address left-padded to 32 bytes
+        // EVM.EVMAddress.bytes is [UInt8] of length 20
+        var addrPadded: [UInt8] = []
+        j = 0
+        while j < 12 {
+            addrPadded.append(0)
+            j = j + 1
+        }
+        addrPadded.appendAll(recipient.bytes)
+        calldata.appendAll(addrPadded)
+
+        // ABI: length of the bytes parameter
         let batchLen = encodedBatch.length
         var lenBytes: [UInt8] = []
         var tmp: Int = batchLen
@@ -343,7 +361,7 @@ access(all) contract IntentExecutorV0_3 {
         // The bytes data itself
         calldata.appendAll(encodedBatch)
 
-        // Pad to multiple of 32 bytes
+        // Pad bytes data to multiple of 32 bytes
         let remainder = batchLen % 32
         if remainder != 0 {
             let padCount = 32 - remainder
@@ -430,8 +448,15 @@ access(all) contract IntentExecutorV0_3 {
             let flowVault <- principalVault as! @FlowToken.Vault
             coa.deposit(from: <- flowVault)
 
-            // 4. Encode executeStrategyWithFunds(bytes) calldata
-            let calldata = IntentExecutorV0_3.encodeExecuteStrategyWithFunds(encodedBatch: encodedBatch)
+            // 4. Encode executeStrategyWithFunds(bytes,address) calldata.
+            //    recipient = intent.recipientEVMAddress if set, else coa.address() (COA default).
+            let recipientAddr: EVM.EVMAddress
+            if let customRecipientHex = intent.recipientEVMAddress {
+                recipientAddr = IntentExecutorV0_3.parseEVMAddress(customRecipientHex)
+            } else {
+                recipientAddr = coa.address()
+            }
+            let calldata = IntentExecutorV0_3.encodeExecuteStrategyWithFunds(encodedBatch: encodedBatch, recipient: recipientAddr)
 
             // 5. Call executeStrategyWithFunds on ComposerV4, forwarding bridged FLOW as msg.value
             result = coa.call(
@@ -527,7 +552,7 @@ access(all) contract IntentExecutorV0_3 {
             ),
             "composer_executeStrategyWithFunds": EVMConfig(
                 address: "0x0000000000000000000000000000000000000000",
-                selector: [0x79, 0x54, 0xfa, 0xe9]  // executeStrategyWithFunds(bytes)
+                selector: [0x76, 0x61, 0xa9, 0x4a]  // executeStrategyWithFunds(bytes,address)
             )
         }
 
