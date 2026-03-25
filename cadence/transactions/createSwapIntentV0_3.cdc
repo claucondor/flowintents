@@ -1,7 +1,7 @@
-/// createIntentV0_2.cdc
-/// Creates a new yield intent in the IntentMarketplaceV0_3 (dual-chain marketplace)
-/// with gas escrow for solver execution payment.
-/// The signer's FlowToken vault funds are split into principal + gas escrow.
+/// createSwapIntentV0_3.cdc
+/// Creates a new SWAP intent in IntentMarketplaceV0_3.
+/// Solver must deliver at least `minAmountOut` of the target token.
+/// Gas escrow is paid in full to the winning solver on execution.
 
 import FungibleToken from "FungibleToken"
 import FlowToken from "FlowToken"
@@ -9,7 +9,8 @@ import IntentMarketplaceV0_3 from "IntentMarketplaceV0_3"
 
 transaction(
     amount: UFix64,
-    targetAPY: UFix64,
+    minAmountOut: UFix64,
+    maxFeeBPS: UInt64,
     durationDays: UInt64,
     expiryBlock: UInt64,
     gasEscrowAmount: UFix64,
@@ -31,23 +32,24 @@ transaction(
                 from: /storage/flowTokenVault
             ) ?? panic("Cannot borrow FlowToken vault")
 
-        // Withdraw principal
+        // Withdraw principal (the FLOW to be swapped)
         self.vault <- flowVault.withdraw(amount: amount)
-        // Withdraw gas escrow
+        // Withdraw gas escrow separately
         self.gasEscrowVault <- flowVault.withdraw(amount: gasEscrowAmount) as! @FlowToken.Vault
         self.signerAddress = signer.address
     }
 
     execute {
-        let intentID = self.marketplace.createYieldIntent(
+        let intentID = self.marketplace.createSwapIntent(
             ownerAddress: self.signerAddress,
             vault: <- self.vault,
-            targetAPY: targetAPY,
+            minAmountOut: minAmountOut,
+            maxFeeBPS: maxFeeBPS,
             durationDays: durationDays,
             expiryBlock: expiryBlock,
             gasEscrowVault: <- self.gasEscrowVault,
             recipientEVMAddress: recipientEVMAddress
         )
-        log("V0_3 Intent created with ID: ".concat(intentID.toString()).concat(" (with gas escrow)"))
+        log("V0_3 SWAP Intent created with ID: ".concat(intentID.toString()))
     }
 }

@@ -122,6 +122,12 @@ access(all) contract IntentMarketplaceV0_3 {
         access(all) let evmToken: String?
         access(all) let evmAmount: UInt256?
 
+        // ---- Optional EVM recipient ("swap and send" support) ----
+        /// If set, output tokens are swept to this EVM address instead of the default
+        /// (COA address for cadence-side intents, intent.user for EVM-side intents).
+        /// Format: "0x<40 hex chars>" e.g. "0xabc...def"
+        access(all) let recipientEVMAddress: String?
+
         // ---- Gas escrow fields ----
         access(all) var gasEscrow: @FlowToken.Vault    // deposited by user at intent creation
         access(all) let executionDeadlineBlock: UInt64  // current block + N (e.g. 1000 blocks)
@@ -144,6 +150,7 @@ access(all) contract IntentMarketplaceV0_3 {
             evmIntentId: UInt256?,
             evmToken: String?,
             evmAmount: UInt256?,
+            recipientEVMAddress: String?,
             gasEscrowVault: @FlowToken.Vault,
             executionDeadlineBlock: UInt64
         ) {
@@ -169,6 +176,7 @@ access(all) contract IntentMarketplaceV0_3 {
             self.evmIntentId = evmIntentId
             self.evmToken = evmToken
             self.evmAmount = evmAmount
+            self.recipientEVMAddress = recipientEVMAddress
             self.gasEscrow <- gasEscrowVault
             self.executionDeadlineBlock = executionDeadlineBlock
             self.executedBy = nil
@@ -243,7 +251,8 @@ access(all) contract IntentMarketplaceV0_3 {
             targetAPY: UFix64,
             durationDays: UInt64,
             expiryBlock: UInt64,
-            gasEscrowVault: @FlowToken.Vault
+            gasEscrowVault: @FlowToken.Vault,
+            recipientEVMAddress: String?
         ): UInt64 {
             pre {
                 vault.balance > 0.0:   "Principal vault cannot be empty"
@@ -276,6 +285,7 @@ access(all) contract IntentMarketplaceV0_3 {
                 evmIntentId: nil,
                 evmToken: nil,
                 evmAmount: nil,
+                recipientEVMAddress: recipientEVMAddress,
                 gasEscrowVault: <- gasEscrowVault,
                 executionDeadlineBlock: deadlineBlock
             )
@@ -309,7 +319,8 @@ access(all) contract IntentMarketplaceV0_3 {
             maxFeeBPS: UInt64,
             durationDays: UInt64,
             expiryBlock: UInt64,
-            gasEscrowVault: @FlowToken.Vault
+            gasEscrowVault: @FlowToken.Vault,
+            recipientEVMAddress: String?
         ): UInt64 {
             pre {
                 vault.balance > 0.0:   "Principal vault cannot be empty"
@@ -341,6 +352,7 @@ access(all) contract IntentMarketplaceV0_3 {
                 evmIntentId: nil,
                 evmToken: nil,
                 evmAmount: nil,
+                recipientEVMAddress: recipientEVMAddress,
                 gasEscrowVault: <- gasEscrowVault,
                 executionDeadlineBlock: deadlineBlock
             )
@@ -374,7 +386,8 @@ access(all) contract IntentMarketplaceV0_3 {
             allowedChains: [String],
             durationDays: UInt64,
             expiryBlock: UInt64,
-            gasEscrowVault: @FlowToken.Vault
+            gasEscrowVault: @FlowToken.Vault,
+            recipientEVMAddress: String?
         ): UInt64 {
             pre {
                 vault.balance > 0.0:      "Principal vault cannot be empty"
@@ -407,6 +420,7 @@ access(all) contract IntentMarketplaceV0_3 {
                 evmIntentId: nil,
                 evmToken: nil,
                 evmAmount: nil,
+                recipientEVMAddress: recipientEVMAddress,
                 gasEscrowVault: <- gasEscrowVault,
                 executionDeadlineBlock: deadlineBlock
             )
@@ -433,7 +447,7 @@ access(all) contract IntentMarketplaceV0_3 {
             return id
         }
 
-        /// Generic create (backward compat — defaults to Yield, cadence side).
+        /// Generic create (backward compat — defaults to Yield, cadence side, no custom recipient).
         access(all) fun createIntent(
             ownerAddress: Address,
             vault: @{FungibleToken.Vault},
@@ -448,7 +462,8 @@ access(all) contract IntentMarketplaceV0_3 {
                 targetAPY: targetAPY,
                 durationDays: durationDays,
                 expiryBlock: expiryBlock,
-                gasEscrowVault: <- gasEscrowVault
+                gasEscrowVault: <- gasEscrowVault,
+                recipientEVMAddress: nil
             )
         }
 
@@ -497,6 +512,7 @@ access(all) contract IntentMarketplaceV0_3 {
                 evmIntentId: evmIntentId,
                 evmToken: evmToken,
                 evmAmount: evmAmount,
+                recipientEVMAddress: nil,
                 gasEscrowVault: <- emptyGasVault,
                 executionDeadlineBlock: deadlineBlock
             )

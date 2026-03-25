@@ -82,6 +82,9 @@ contract FlowIntentsComposerV4 is Ownable, ReentrancyGuard {
         IntentType intentType; // YIELD or SWAP
         address tokenOut;      // for SWAP: desired output token (address(0) = native FLOW)
         uint256 minAmountOut;  // for SWAP: minimum tokens to receive
+        // V4 additions — optional recipient override ("swap and send")
+        /// If non-zero, output tokens are sent here instead of `user`.
+        address recipientAddress;
     }
 
     /// @notice A single step in a strategy execution batch
@@ -206,13 +209,15 @@ contract FlowIntentsComposerV4 is Ownable, ReentrancyGuard {
     /// @param targetAPY Target APY in basis points (e.g., 500 = 5%)
     /// @param durationDays How many days to run the strategy
     /// @param principalSide 0=EVM_YIELD, 1=CADENCE_YIELD
+    /// @param recipientAddress Optional override for output token recipient. address(0) = send to msg.sender.
     /// @return intentId The ID of the newly created intent
     function submitIntent(
         address token,
         uint256 amount,
         uint256 targetAPY,
         uint256 durationDays,
-        uint8 principalSide
+        uint8 principalSide,
+        address recipientAddress
     ) external payable nonReentrant returns (uint256 intentId) {
         require(targetAPY > 0, "FlowIntentsComposerV4: zero APY");
         require(durationDays > 0, "FlowIntentsComposerV4: zero duration");
@@ -245,7 +250,8 @@ contract FlowIntentsComposerV4 is Ownable, ReentrancyGuard {
             pickedUp: false,
             intentType: IntentType.YIELD,
             tokenOut: address(0),
-            minAmountOut: 0
+            minAmountOut: 0,
+            recipientAddress: recipientAddress
         });
 
         intentBalances[intentId] = depositAmount;
@@ -273,13 +279,15 @@ contract FlowIntentsComposerV4 is Ownable, ReentrancyGuard {
     /// @param tokenOut Output token. address(0) = native FLOW.
     /// @param minAmountOut Minimum acceptable output amount.
     /// @param durationDays How long solvers have to fill the order.
+    /// @param recipientAddress Optional override for output token recipient. address(0) = send to msg.sender.
     /// @return intentId The ID of the newly created swap intent
     function submitSwapIntent(
         address tokenIn,
         uint256 amount,
         address tokenOut,
         uint256 minAmountOut,
-        uint256 durationDays
+        uint256 durationDays,
+        address recipientAddress
     ) external payable nonReentrant returns (uint256 intentId) {
         require(minAmountOut > 0, "FlowIntentsComposerV4: zero minAmountOut");
         require(durationDays > 0, "FlowIntentsComposerV4: zero duration");
@@ -312,7 +320,8 @@ contract FlowIntentsComposerV4 is Ownable, ReentrancyGuard {
             pickedUp: false,
             intentType: IntentType.SWAP,
             tokenOut: tokenOut,
-            minAmountOut: minAmountOut
+            minAmountOut: minAmountOut,
+            recipientAddress: recipientAddress
         });
 
         intentBalances[intentId] = depositAmount;
@@ -447,14 +456,20 @@ contract FlowIntentsComposerV4 is Ownable, ReentrancyGuard {
     ///         as msg.value in a coa.call(). Cadence tracks intent state — no
     ///         EVM-side intent ID is required here.
     ///
-    ///         Selector: 0x7954fae9
+    ///         After executing all batch steps, sweeps any ERC-20 output tokens
+    ///         held by this contract to `recipient` (the user's COA EVM address).
+    ///
+    ///         Selector: 0x7661a94a
     ///
     /// @param encodedBatch ABI-encoded array of StrategyStep structs.
     ///                     Steps receive msg.value via the first step's `value` field
     ///                     or can reference this contract's balance directly.
+    /// @param recipient    Address to sweep output ERC-20 tokens to (typically the user's COA).
+    ///                     If address(0), no sweep is performed.
     /// @return success True if all steps executed without reverting
     function executeStrategyWithFunds(
-        bytes calldata encodedBatch
+        bytes calldata encodedBatch,
+        address recipient
     ) external payable onlyCOA nonReentrant returns (bool success) {
         require(msg.value > 0, "FlowIntentsComposerV4: no FLOW bridged");
 
@@ -475,6 +490,30 @@ contract FlowIntentsComposerV4 is Ownable, ReentrancyGuard {
             unchecked {
                 stepsExecuted++;
                 i++;
+            }
+        }
+
+        // Sweep output ERC-20 tokens to recipient.
+        // Scan each step's target: if it looks like an ERC-20 (responds to balanceOf)
+        // and this contract holds a balance, transfer it to recipient.
+        if (recipient != address(0)) {
+            for (uint256 i = 0; i < steps.length; ) {
+                address t = steps[i].target;
+                // balanceOf(address) selector: 0x70a08231
+                (bool ok, bytes memory data) = t.staticcall(
+                    abi.encodeWithSelector(0x70a08231, address(this))
+                );
+                if (ok && data.length == 32) {
+                    uint256 bal = abi.decode(data, (uint256));
+                    if (bal > 0) {
+                        // transfer(address,uint256) selector: 0xa9059cbb
+                        (bool tok, ) = t.call(
+                            abi.encodeWithSelector(0xa9059cbb, recipient, bal)
+                        );
+                        require(tok, "FlowIntentsComposerV4: token sweep failed");
+                    }
+                }
+                unchecked { i++; }
             }
         }
 
@@ -555,9 +594,10 @@ contract FlowIntentsComposerV4 is Ownable, ReentrancyGuard {
             unchecked { i++; }
         }
 
-        // --- 5. Transfer offeredAmountOut of tokenOut to intent.user ---
+        // --- 5. Transfer offeredAmountOut of tokenOut to recipient ---
+        // Use recipientAddress override if set; otherwise default to intent.user.
         address tokenOut = intent.tokenOut;
-        address user = intent.user;
+        address recipient = intent.recipientAddress != address(0) ? intent.recipientAddress : intent.user;
 
         if (tokenOut == address(0)) {
             // Native FLOW output — contract must hold sufficient balance after the batch
@@ -565,11 +605,11 @@ contract FlowIntentsComposerV4 is Ownable, ReentrancyGuard {
                 address(this).balance >= offeredAmountOut,
                 "FlowIntentsComposerV4: insufficient native FLOW for payout"
             );
-            (bool sent, ) = payable(user).call{value: offeredAmountOut}("");
+            (bool sent, ) = payable(recipient).call{value: offeredAmountOut}("");
             require(sent, "FlowIntentsComposerV4: native FLOW transfer failed");
         } else {
             // ERC-20 output — contract must hold sufficient tokenOut after the batch
-            IERC20(tokenOut).safeTransfer(user, offeredAmountOut);
+            IERC20(tokenOut).safeTransfer(recipient, offeredAmountOut);
         }
 
         // --- 6. Mark intent completed ---
@@ -665,6 +705,10 @@ contract FlowIntentsComposerV4 is Ownable, ReentrancyGuard {
         } else {
             IERC20(withdrawToken).safeTransfer(msg.sender, amount);
         }
+        // Note: for EVM-side intents, executeSwapDirect already sends tokens directly to
+        // the recipient (recipientAddress override or intent.user) at execution time,
+        // so withdraw() handles only CANCELLED intents (principal refund to msg.sender) and
+        // YIELD intents where funds come back via markCompleted().
 
         emit WithdrawalProcessed(intentId, msg.sender, amount);
     }
