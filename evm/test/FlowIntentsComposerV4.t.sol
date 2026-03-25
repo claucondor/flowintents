@@ -456,6 +456,129 @@ contract FlowIntentsComposerV4Test is Test {
         assertEq(user1.balance - balBefore, 5 ether);
     }
 
+    // =========================================================================
+    // executeYieldDirect tests
+    // =========================================================================
+
+    /// @notice Registered agent successfully fills a YIELD intent via executeYieldDirect.
+    function test_executeYieldDirect_success() public {
+        // user1 submits a YIELD intent
+        vm.prank(user1);
+        uint256 intentId = composer.submitIntent{value: 10 ether}(
+            address(0), // native FLOW
+            0,
+            500,  // 5% APY
+            30,   // 30 days
+            0     // EVM_YIELD
+        );
+        assertEq(intentId, 1);
+        assertEq(uint8(composer.getIntentStatus(intentId)), uint8(FlowIntentsComposerV4.IntentStatus.PENDING));
+
+        // Build a batch: call a mock vault's deposit()
+        address mockVault = makeAddr("mockYieldVault");
+        vm.mockCall(
+            mockVault,
+            abi.encodeWithSignature("deposit()"),
+            abi.encode(true)
+        );
+
+        FlowIntentsComposerV4.StrategyStep[] memory steps = new FlowIntentsComposerV4.StrategyStep[](1);
+        steps[0] = FlowIntentsComposerV4.StrategyStep({
+            protocol: 0, // MORE
+            target: mockVault,
+            callData: abi.encodeWithSignature("deposit()"),
+            value: 0
+        });
+        bytes memory encodedBatch = abi.encode(steps);
+
+        vm.expectEmit(true, true, false, true);
+        emit FlowIntentsComposerV4.YieldExecuted(intentId, registeredSolver, encodedBatch.length);
+
+        vm.prank(registeredSolver);
+        composer.executeYieldDirect(intentId, encodedBatch);
+
+        // Intent should now be EXECUTING
+        assertEq(
+            uint8(composer.getIntentStatus(intentId)),
+            uint8(FlowIntentsComposerV4.IntentStatus.EXECUTING),
+            "Intent should be EXECUTING after executeYieldDirect"
+        );
+    }
+
+    /// @notice Unregistered address calling executeYieldDirect must revert.
+    function test_executeYieldDirect_notRegistered_reverts() public {
+        vm.prank(user1);
+        uint256 intentId = composer.submitIntent{value: 5 ether}(
+            address(0), 0, 500, 30, 0
+        );
+
+        FlowIntentsComposerV4.StrategyStep[] memory steps = new FlowIntentsComposerV4.StrategyStep[](1);
+        steps[0] = FlowIntentsComposerV4.StrategyStep({
+            protocol: 4,
+            target: makeAddr("dummy"),
+            callData: "",
+            value: 0
+        });
+
+        vm.prank(unregisteredSolver);
+        vm.expectRevert("caller not a registered agent");
+        composer.executeYieldDirect(intentId, abi.encode(steps));
+    }
+
+    /// @notice executeYieldDirect on a SWAP intent must revert.
+    function test_executeYieldDirect_notYield_reverts() public {
+        vm.prank(user1);
+        uint256 intentId = composer.submitSwapIntent{value: 5 ether}(
+            address(0),
+            0,
+            address(tokenB),
+            100 ether,
+            7
+        );
+
+        FlowIntentsComposerV4.StrategyStep[] memory steps = new FlowIntentsComposerV4.StrategyStep[](1);
+        steps[0] = FlowIntentsComposerV4.StrategyStep({
+            protocol: 4,
+            target: makeAddr("dummy"),
+            callData: "",
+            value: 0
+        });
+
+        vm.prank(registeredSolver);
+        vm.expectRevert("not a YIELD intent");
+        composer.executeYieldDirect(intentId, abi.encode(steps));
+    }
+
+    /// @notice executeYieldDirect on a COMPLETED intent must revert.
+    function test_executeYieldDirect_wrongStatus_reverts() public {
+        // Submit YIELD intent
+        vm.prank(user1);
+        uint256 intentId = composer.submitIntent{value: 5 ether}(
+            address(0), 0, 500, 30, 0
+        );
+
+        // COA marks it picked up then completed
+        vm.prank(mockCOA);
+        composer.markPickedUp(intentId);
+
+        vm.prank(mockCOA);
+        composer.markCompleted(intentId, 5 ether);
+
+        assertEq(uint8(composer.getIntentStatus(intentId)), uint8(FlowIntentsComposerV4.IntentStatus.COMPLETED));
+
+        FlowIntentsComposerV4.StrategyStep[] memory steps = new FlowIntentsComposerV4.StrategyStep[](1);
+        steps[0] = FlowIntentsComposerV4.StrategyStep({
+            protocol: 4,
+            target: makeAddr("dummy"),
+            callData: "",
+            value: 0
+        });
+
+        vm.prank(registeredSolver);
+        vm.expectRevert("intent not ready for yield execution");
+        composer.executeYieldDirect(intentId, abi.encode(steps));
+    }
+
     /// @notice nextIntentId increments correctly across multiple submissions.
     function test_nextIntentId_increments() public {
         vm.startPrank(user1);

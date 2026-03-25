@@ -18,9 +18,13 @@ import {Script, console2} from "forge-std/Script.sol";
 ///   supply(address asset, uint256 amount, address onBehalfOf, uint16 referralCode)
 ///   selector: keccak256("supply(address,uint256,address,uint16)") = 0x617ba037
 ///
-/// NOTE: MORE Protocol is an Aave v2 fork — use `deposit` selector (0xe8eda9df).
-///       If the pool reverts with this selector, try `supply` (0x617ba037).
+/// NOTE: MORE Protocol is an Aave v3 fork (confirmed via ADDRESSES_PROVIDER() returning
+///       0x1830a96466d1d108935865c75B0a9548681Cfd9A on mainnet).
+///       Both supply() (0x617ba037) and deposit() (0xe8eda9df) selectors are live —
+///       both return error code 26 (INVALID_AMOUNT) when called with amount=0.
+///       Use supply() (0x617ba037) as the canonical Aave v3 selector.
 ///       WFLOW is the primary yield asset on Flow EVM for MORE.
+///       Output token: mFlowWFLOW (More Flow WFLOW) @ 0x02BF4bd075c1b7C8D85F54777eaAA3638135c059
 ///
 /// The StrategyStep struct (from FlowIntentsComposerV2):
 ///   struct StrategyStep {

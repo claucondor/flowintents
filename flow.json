@@ -17,6 +17,14 @@
 				"testing": "0000000000000007"
 			}
 		},
+		"BidManagerV0_3": {
+			"source": "cadence/contracts/BidManagerV0_3.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "c65395858a38d8ff",
+				"testing": "0000000000000007"
+			}
+		},
 		"IntentExecutorV0_1": {
 			"source": "cadence/contracts/IntentExecutorV0_1.cdc",
 			"aliases": {
@@ -262,6 +270,7 @@
 				"IntentMarketplaceV0_2",
 				"IntentMarketplaceV0_3",
 				"BidManagerV0_2",
+				"BidManagerV0_3",
 				"IntentExecutorV0_3",
 				"ScheduledManagerV0_3"
 			]
@@ -275,6 +284,7 @@
 				"SolverRegistryV0_2",
 				"IntentMarketplaceV0_3",
 				"BidManagerV0_2",
+				"BidManagerV0_3",
 				"IntentExecutorV0_3",
 				"ScheduledManagerV0_3"
 			]

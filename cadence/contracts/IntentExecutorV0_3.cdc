@@ -8,7 +8,7 @@ import FlowToken from "FlowToken"
 import IntentMarketplaceV0_1 from "IntentMarketplaceV0_1"
 import IntentMarketplaceV0_3 from "IntentMarketplaceV0_3"
 import BidManagerV0_1 from "BidManagerV0_1"
-import BidManagerV0_2 from "BidManagerV0_2"
+import BidManagerV0_3 from "BidManagerV0_3"
 
 access(all) contract IntentExecutorV0_3 {
 
@@ -389,7 +389,7 @@ access(all) contract IntentExecutorV0_3 {
             message: "Intent must be in BidSelected status for execution"
         )
 
-        let winningBid = BidManagerV0_2.getWinningBid(intentID: intentID)
+        let winningBid = BidManagerV0_3.getWinningBid(intentID: intentID)
             ?? panic("No winning bid found for intent in BidManagerV0_2")
         assert(
             winningBid.solverAddress == solverAddress,
@@ -420,10 +420,11 @@ access(all) contract IntentExecutorV0_3 {
             let principalBalance = principalVault.balance
 
             // 2. Convert UFix64 → attoFLOW
-            //    UFix64 has 8 decimal places. attoFLOW has 18.
-            //    Multiply by 10^10 = 10_000_000_000
-            //    To avoid UFix64 overflow, use: UInt(balance * 1_000_000_000.0) * 10
-            let attoflow: UInt = UInt(principalBalance * 1_000_000_000.0) * 10
+            //    UFix64 has 8 decimal places. attoFLOW has 18. Factor = 10^10.
+            //    Step 1: get raw UFix64 units (strip decimals): UInt(balance * 1e8) = raw integer
+            //    Step 2: multiply by 10^10 to get attoFLOW
+            //    Example: 1.0 FLOW → UInt(1.0 * 1e8) = 100_000_000 → * 10^10 = 10^18 attoFLOW ✓
+            let attoflow: UInt = UInt(principalBalance * 100_000_000.0) * 10_000_000_000
 
             // 3. Deposit FLOW from Cadence vault into COA's EVM balance
             let flowVault <- principalVault as! @FlowToken.Vault
