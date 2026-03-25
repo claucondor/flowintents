@@ -13,8 +13,7 @@ transaction(
     maxFeeBPS: UInt64,
     durationDays: UInt64,
     expiryBlock: UInt64,
-    gasEscrowAmount: UFix64,
-    recipientEVMAddress: String?
+    gasEscrowAmount: UFix64
 ) {
     let marketplace: &IntentMarketplaceV0_3.Marketplace
     let vault: @{FungibleToken.Vault}
@@ -47,8 +46,7 @@ transaction(
             maxFeeBPS: maxFeeBPS,
             durationDays: durationDays,
             expiryBlock: expiryBlock,
-            gasEscrowVault: <- self.gasEscrowVault,
-            recipientEVMAddress: recipientEVMAddress
+            gasEscrowVault: <- self.gasEscrowVault
         )
         log("V0_3 SWAP Intent created with ID: ".concat(intentID.toString()))
     }

@@ -336,15 +336,24 @@ access(all) contract IntentExecutorV0_3 {
         calldata.appendAll(offsetBytes)
 
         // ABI head slot 2: recipient address left-padded to 32 bytes
-        // EVM.EVMAddress.bytes is [UInt8] of length 20
-        var addrPadded: [UInt8] = []
+        // EVM.EVMAddress.bytes is [UInt8; 20] (fixed-size array)
         j = 0
         while j < 12 {
-            addrPadded.append(0)
+            calldata.append(0)
             j = j + 1
         }
-        addrPadded.appendAll(recipient.bytes)
-        calldata.appendAll(addrPadded)
+        // Append each of the 20 address bytes individually (fixed-size → dynamic)
+        let addrBytes = recipient.bytes
+        calldata.append(addrBytes[0]);  calldata.append(addrBytes[1])
+        calldata.append(addrBytes[2]);  calldata.append(addrBytes[3])
+        calldata.append(addrBytes[4]);  calldata.append(addrBytes[5])
+        calldata.append(addrBytes[6]);  calldata.append(addrBytes[7])
+        calldata.append(addrBytes[8]);  calldata.append(addrBytes[9])
+        calldata.append(addrBytes[10]); calldata.append(addrBytes[11])
+        calldata.append(addrBytes[12]); calldata.append(addrBytes[13])
+        calldata.append(addrBytes[14]); calldata.append(addrBytes[15])
+        calldata.append(addrBytes[16]); calldata.append(addrBytes[17])
+        calldata.append(addrBytes[18]); calldata.append(addrBytes[19])
 
         // ABI: length of the bytes parameter
         let batchLen = encodedBatch.length
@@ -449,13 +458,8 @@ access(all) contract IntentExecutorV0_3 {
             coa.deposit(from: <- flowVault)
 
             // 4. Encode executeStrategyWithFunds(bytes,address) calldata.
-            //    recipient = intent.recipientEVMAddress if set, else coa.address() (COA default).
-            let recipientAddr: EVM.EVMAddress
-            if let customRecipientHex = intent.recipientEVMAddress {
-                recipientAddr = IntentExecutorV0_3.parseEVMAddress(customRecipientHex)
-            } else {
-                recipientAddr = coa.address()
-            }
+            //    recipient = coa.address() (COA default — tokens land in COA's EVM balance).
+            let recipientAddr: EVM.EVMAddress = coa.address()
             let calldata = IntentExecutorV0_3.encodeExecuteStrategyWithFunds(encodedBatch: encodedBatch, recipient: recipientAddr)
 
             // 5. Call executeStrategyWithFunds on ComposerV4, forwarding bridged FLOW as msg.value
