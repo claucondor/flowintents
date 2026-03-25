@@ -158,6 +158,7 @@ contract FlowIntentsComposerV4 is Ownable, ReentrancyGuard {
     // V4 new events
     event CadenceBridgeBatchExecuted(address indexed coa, uint256 value, uint256 stepsExecuted);
     event SwapExecuted(uint256 indexed intentId, address indexed solver, uint256 amountOut);
+    event YieldExecuted(uint256 indexed intentId, address indexed solver, uint256 batchLength);
 
     // -------------------------------------------------------------------------
     // Constructor
@@ -576,6 +577,58 @@ contract FlowIntentsComposerV4 is Ownable, ReentrancyGuard {
         intentStatuses[intentId] = IntentStatus.COMPLETED;
 
         emit SwapExecuted(intentId, msg.sender, offeredAmountOut);
+    }
+
+    // -------------------------------------------------------------------------
+    // V4 NEW: executeYieldDirect — permissionless EVM-only yield execution
+    // -------------------------------------------------------------------------
+
+    /// @notice Fill an EVM-side YIELD intent directly without going through COA.
+    ///         Any registered agent (AgentIdentityRegistry NFT holder) can call this.
+    ///         Funds are already in this contract from the user's submitIntent() call.
+    ///         The batch executes the yield strategy (e.g. deposit to MORE, wrap to WFLOW).
+    ///         Intent moves to EXECUTING state — yield is active until duration expires or
+    ///         the solver calls a future withdraw/settle function.
+    ///
+    ///         Selector: 0x9a7b81cf
+    ///
+    /// @param intentId The EVM YIELD intent to execute
+    /// @param encodedBatch ABI-encoded StrategyStep[] for the yield strategy
+    function executeYieldDirect(
+        uint256 intentId,
+        bytes calldata encodedBatch
+    ) external nonReentrant {
+        // 1. Caller must be registered agent
+        require(identityRegistry != address(0), "identity registry not set");
+        require(
+            IAgentIdentityRegistry(identityRegistry).getTokenByOwner(msg.sender) > 0,
+            "caller not a registered agent"
+        );
+
+        // 2. Validate intent
+        require(intentId > 0 && intentId < nextIntentId, "invalid intentId");
+        EVMIntentRequest storage intent = _intentRequests[intentId];
+        require(intent.intentType == IntentType.YIELD, "not a YIELD intent");
+        require(
+            intentStatuses[intentId] == IntentStatus.PICKED_UP ||
+            intentStatuses[intentId] == IntentStatus.PENDING,
+            "intent not ready for yield execution"
+        );
+
+        // 3. Execute the strategy batch
+        StrategyStep[] memory steps = abi.decode(encodedBatch, (StrategyStep[]));
+        require(steps.length > 0, "empty batch");
+
+        intentStatuses[intentId] = IntentStatus.EXECUTING;
+
+        for (uint256 i = 0; i < steps.length; ) {
+            StrategyStep memory step = steps[i];
+            (bool ok, ) = step.target.call{value: step.value}(step.callData);
+            if (!ok) revert("yield step failed");
+            unchecked { i++; }
+        }
+
+        emit YieldExecuted(intentId, msg.sender, encodedBatch.length);
     }
 
     // -------------------------------------------------------------------------

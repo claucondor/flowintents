@@ -1,7 +1,7 @@
 /// selectWinnerV0_3.cdc
-/// Intent owner selects the winning bid via BidManagerV0_2 (with gas-weighted scoring).
+/// Intent owner selects the winning bid via BidManagerV0_3 (with gas-weighted scoring).
 
-import BidManagerV0_2 from "BidManagerV0_2"
+import BidManagerV0_3 from "BidManagerV0_3"
 
 transaction(intentID: UInt64) {
     let callerAddress: Address
@@ -11,7 +11,7 @@ transaction(intentID: UInt64) {
     }
 
     execute {
-        BidManagerV0_2.selectWinner(intentID: intentID, callerAddress: self.callerAddress)
+        BidManagerV0_3.selectWinner(intentID: intentID, callerAddress: self.callerAddress)
         log("V0_3 Winner selected for intent ".concat(intentID.toString()))
     }
 }
