@@ -322,6 +322,25 @@ access(all) contract BidManagerV0_3 {
         return BidManagerV0_3.winners[intentID]
     }
 
+    /// Returns all bid IDs submitted by a solver.
+    /// Derived by scanning solverBidForIntent keys (format: "<intentID>-<solverAddress>").
+    access(all) fun getBidsBySolver(_ solver: Address): [UInt64] {
+        let solverStr = solver.toString()
+        let result: [UInt64] = []
+        for key in BidManagerV0_3.solverBidForIntent.keys {
+            // key format: "<intentID>-<solverAddress>"
+            if key.length > solverStr.length {
+                let suffix = key.slice(from: key.length - solverStr.length, upTo: key.length)
+                if suffix == solverStr {
+                    if let bidID = BidManagerV0_3.solverBidForIntent[key] {
+                        result.append(bidID)
+                    }
+                }
+            }
+        }
+        return result
+    }
+
     access(all) fun getEncodedBatch(intentID: UInt64): [UInt8]? {
         if let winnerID = BidManagerV0_3.winners[intentID] {
             if let bid = &BidManagerV0_3.bids[winnerID] as &Bid? {
