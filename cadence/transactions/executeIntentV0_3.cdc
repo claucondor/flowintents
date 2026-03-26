@@ -7,7 +7,7 @@ import FungibleToken from "FungibleToken"
 import FlowToken from "FlowToken"
 import IntentExecutorV0_3 from "IntentExecutorV0_3"
 
-transaction(intentID: UInt64) {
+transaction(intentID: UInt64, recipientEVMAddress: String?) {
     let coa: auth(EVM.Call) &EVM.CadenceOwnedAccount
     let solverAddress: Address
     let solverReceiver: &{FungibleToken.Receiver}
@@ -31,7 +31,8 @@ transaction(intentID: UInt64) {
             intentID: intentID,
             solverAddress: self.solverAddress,
             coa: self.coa,
-            solverFlowReceiver: self.solverReceiver
+            solverFlowReceiver: self.solverReceiver,
+            recipientEVMAddress: recipientEVMAddress
         )
         log("V0_3 Intent ".concat(intentID.toString()).concat(" executed — solver received full gas escrow"))
     }
