@@ -253,7 +253,12 @@
 		},
 		"fork-service-account": {
 			"address": "e467b9dd11fa00df",
-			"key": "REDACTED_DEV_KEY"
+			"key": {
+				"type": "hex",
+				"signatureAlgorithm": "ECDSA_secp256k1",
+				"hashAlgorithm": "SHA2_256",
+				"privateKey": "$FORK_SERVICE_KEY"
+			}
 		},
 		"mainnet-account": {
 			"address": "c65395858a38d8ff",
