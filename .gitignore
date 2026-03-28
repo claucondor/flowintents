@@ -29,6 +29,7 @@ evm/broadcast/*/
 evm/deployments/*.json
 
 # Personal / session documents (not for public repo)
+sdk/README-BOTS.md
 PLAN.md
 DEMO.md
 STRATEGIES.md
