@@ -393,6 +393,9 @@ access(all) contract IntentExecutorV0_3 {
     ///
     /// For EVM-side intents (principalSide == evm):
     ///   Funds are already in ComposerV4. Use the existing coa.call() path.
+    ///   If recipientEVMAddress is provided (non-nil), call executeStrategyWithFunds(encodedBatch, recipient)
+    ///   to route output tokens to the original EVM creator's wallet.
+    ///   If recipientEVMAddress is nil, fall back to calling with raw encodedBatch (legacy behavior).
     ///
     /// After successful EVM execution:
     ///   Transfer the FULL gas escrow to the solver (no refund to user).
@@ -401,7 +404,8 @@ access(all) contract IntentExecutorV0_3 {
         intentID: UInt64,
         solverAddress: Address,
         coa: auth(EVM.Call) &EVM.CadenceOwnedAccount,
-        solverFlowReceiver: &{FungibleToken.Receiver}
+        solverFlowReceiver: &{FungibleToken.Receiver},
+        recipientEVMAddress: String?
     ) {
         pre {
             IntentExecutorV0_3.composerAddress != "0x0000000000000000000000000000000000000000":
@@ -471,14 +475,31 @@ access(all) contract IntentExecutorV0_3 {
             )
         } else {
             // ----------------------------------------------------------------
-            // EVM-side intent: funds already in ComposerV4, call with encodedBatch directly
+            // EVM-side intent: funds already in ComposerV4.
+            // If recipientEVMAddress is provided, route output to that address via
+            // executeStrategyWithFunds(bytes,address). Otherwise fall back to
+            // calling with the raw encodedBatch (legacy behavior).
             // ----------------------------------------------------------------
-            result = coa.call(
-                to: composerEVMAddress,
-                data: encodedBatch,
-                gasLimit: 500000,
-                value: EVM.Balance(attoflow: 0)
-            )
+            if let recipientHex = recipientEVMAddress {
+                let recipientAddr = IntentExecutorV0_3.parseEVMAddress(recipientHex)
+                let calldata = IntentExecutorV0_3.encodeExecuteStrategyWithFunds(
+                    encodedBatch: encodedBatch,
+                    recipient: recipientAddr
+                )
+                result = coa.call(
+                    to: composerEVMAddress,
+                    data: calldata,
+                    gasLimit: 500000,
+                    value: EVM.Balance(attoflow: 0)
+                )
+            } else {
+                result = coa.call(
+                    to: composerEVMAddress,
+                    data: encodedBatch,
+                    gasLimit: 500000,
+                    value: EVM.Balance(attoflow: 0)
+                )
+            }
         }
 
         let evmResult = result ?? panic("EVM call result is nil")
