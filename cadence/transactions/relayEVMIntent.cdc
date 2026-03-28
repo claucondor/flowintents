@@ -22,7 +22,10 @@
 ///   expiryBlock         — Block number when intent expires
 ///   principalAmount     — Principal FLOW as UFix64 (must match EVMIntent.amount / 1e10)
 ///   gasEscrowAmount     — Gas escrow FLOW as UFix64 (must match EVMIntent.gasEscrow / 1e10)
-///   recipientEVMAddress — Optional EVM address for output routing
+///   recipientEVMAddress — EVM creator address (from EVMBidRelay.EVMIntentSubmitted event).
+///                         Recorded here for off-chain indexing only; pass it to
+///                         IntentExecutorV0_3.executeIntentV2() at execution time so output
+///                         tokens are routed back to the original EVM wallet.
 
 import EVM from "EVM"
 import FungibleToken from "FungibleToken"
