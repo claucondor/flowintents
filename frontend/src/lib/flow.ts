@@ -114,7 +114,6 @@ export interface Intent {
   winningBidID: number | null;
   createdAt: number;
   principalSide: number; // 0=cadence, 1=evm
-  recipientEVMAddress: string | null;
   gasEscrowBalance: number;
   executionDeadlineBlock: number;
 }
@@ -175,7 +174,6 @@ access(all) struct IntentData {
   access(all) let winningBidID: UInt64?
   access(all) let createdAt: UFix64
   access(all) let principalSide: UInt8
-  access(all) let recipientEVMAddress: String?
   access(all) let gasEscrowBalance: UFix64
   access(all) let executionDeadlineBlock: UInt64
 
@@ -193,7 +191,6 @@ access(all) struct IntentData {
     winningBidID: UInt64?,
     createdAt: UFix64,
     principalSide: UInt8,
-    recipientEVMAddress: String?,
     gasEscrowBalance: UFix64,
     executionDeadlineBlock: UInt64
   ) {
@@ -210,32 +207,32 @@ access(all) struct IntentData {
     self.winningBidID = winningBidID
     self.createdAt = createdAt
     self.principalSide = principalSide
-    self.recipientEVMAddress = recipientEVMAddress
     self.gasEscrowBalance = gasEscrowBalance
     self.executionDeadlineBlock = executionDeadlineBlock
   }
 }
 
 access(all) fun main(intentID: UInt64): IntentData? {
-  let intent = IntentMarketplaceV0_3.getIntent(id: intentID) ?? return nil
-  return IntentData(
-    id: intent.id,
-    intentOwner: intent.intentOwner,
-    principalAmount: intent.principalAmount,
-    intentType: intent.intentType.rawValue,
-    targetAPY: intent.targetAPY,
-    minAmountOut: intent.minAmountOut,
-    maxFeeBPS: intent.maxFeeBPS,
-    durationDays: intent.durationDays,
-    expiryBlock: intent.expiryBlock,
-    status: intent.status.rawValue,
-    winningBidID: intent.winningBidID,
-    createdAt: intent.createdAt,
-    principalSide: intent.principalSide.rawValue,
-    recipientEVMAddress: intent.recipientEVMAddress,
-    gasEscrowBalance: intent.getGasEscrowBalance(),
-    executionDeadlineBlock: intent.executionDeadlineBlock
-  )
+  if let intent = IntentMarketplaceV0_3.getIntent(id: intentID) {
+    return IntentData(
+      id: intent.id,
+      intentOwner: intent.intentOwner,
+      principalAmount: intent.principalAmount,
+      intentType: intent.intentType.rawValue,
+      targetAPY: intent.targetAPY,
+      minAmountOut: intent.minAmountOut,
+      maxFeeBPS: intent.maxFeeBPS,
+      durationDays: intent.durationDays,
+      expiryBlock: intent.expiryBlock,
+      status: intent.status.rawValue,
+      winningBidID: intent.winningBidID,
+      createdAt: intent.createdAt,
+      principalSide: intent.principalSide.rawValue,
+      gasEscrowBalance: intent.getGasEscrowBalance(),
+      executionDeadlineBlock: intent.executionDeadlineBlock
+    )
+  }
+  return nil
 }
 `;
 
@@ -293,21 +290,23 @@ access(all) struct BidData {
 }
 
 access(all) fun main(bidID: UInt64): BidData? {
-  let bid = BidManagerV0_3.getBid(bidID: bidID) ?? return nil
-  return BidData(
-    id: bid.id,
-    intentID: bid.intentID,
-    solverAddress: bid.solverAddress,
-    solverEVMAddress: bid.solverEVMAddress,
-    offeredAPY: bid.offeredAPY,
-    offeredAmountOut: bid.offeredAmountOut,
-    estimatedFeeBPS: bid.estimatedFeeBPS,
-    targetChain: bid.targetChain,
-    maxGasBid: bid.maxGasBid,
-    strategy: bid.strategy,
-    submittedAt: bid.submittedAt,
-    score: bid.score
-  )
+  if let bid = BidManagerV0_3.getBid(bidID: bidID) {
+    return BidData(
+      id: bid.id,
+      intentID: bid.intentID,
+      solverAddress: bid.solverAddress,
+      solverEVMAddress: bid.solverEVMAddress,
+      offeredAPY: bid.offeredAPY,
+      offeredAmountOut: bid.offeredAmountOut,
+      estimatedFeeBPS: bid.estimatedFeeBPS,
+      targetChain: bid.targetChain,
+      maxGasBid: bid.maxGasBid,
+      strategy: bid.strategy,
+      submittedAt: bid.submittedAt,
+      score: bid.score
+    )
+  }
+  return nil
 }
 `;
 
@@ -358,21 +357,23 @@ access(all) struct BidData {
 }
 
 access(all) fun main(intentID: UInt64): BidData? {
-  let bid = BidManagerV0_3.getWinningBid(intentID: intentID) ?? return nil
-  return BidData(
-    id: bid.id,
-    intentID: bid.intentID,
-    solverAddress: bid.solverAddress,
-    solverEVMAddress: bid.solverEVMAddress,
-    offeredAPY: bid.offeredAPY,
-    offeredAmountOut: bid.offeredAmountOut,
-    estimatedFeeBPS: bid.estimatedFeeBPS,
-    targetChain: bid.targetChain,
-    maxGasBid: bid.maxGasBid,
-    strategy: bid.strategy,
-    submittedAt: bid.submittedAt,
-    score: bid.score
-  )
+  if let bid = BidManagerV0_3.getWinningBid(intentID: intentID) {
+    return BidData(
+      id: bid.id,
+      intentID: bid.intentID,
+      solverAddress: bid.solverAddress,
+      solverEVMAddress: bid.solverEVMAddress,
+      offeredAPY: bid.offeredAPY,
+      offeredAmountOut: bid.offeredAmountOut,
+      estimatedFeeBPS: bid.estimatedFeeBPS,
+      targetChain: bid.targetChain,
+      maxGasBid: bid.maxGasBid,
+      strategy: bid.strategy,
+      submittedAt: bid.submittedAt,
+      score: bid.score
+    )
+  }
+  return nil
 }
 `;
 
@@ -406,7 +407,6 @@ export async function getIntent(id: number): Promise<Intent | null> {
     winningBidID: result.winningBidID ?? null,
     createdAt: result.createdAt ?? 0,
     principalSide: result.principalSide ?? 0,
-    recipientEVMAddress: result.recipientEVMAddress ?? null,
     gasEscrowBalance: result.gasEscrowBalance ?? 0,
     executionDeadlineBlock: result.executionDeadlineBlock ?? 0,
   };
@@ -591,6 +591,70 @@ export async function getProtocolStats(): Promise<ProtocolStats> {
 }
 
 // ── Intent type helpers ───────────────────────────────────────────────────────
+
+// ── Live event feed ───────────────────────────────────────────────────────────
+
+export type LiveEventType =
+  | "IntentCreated"
+  | "EVMIntentCreated"
+  | "BidSubmitted"
+  | "WinnerSelected"
+  | "IntentCompleted"
+  | "IntentCancelled";
+
+export interface LiveEvent {
+  id: string;
+  eventType: LiveEventType;
+  blockHeight: number;
+  transactionId: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: Record<string, any>;
+}
+
+const LIVE_EVENT_SOURCES: { name: LiveEventType; contract: string }[] = [
+  { name: "IntentCreated",    contract: "IntentMarketplaceV0_3" },
+  { name: "EVMIntentCreated", contract: "IntentMarketplaceV0_3" },
+  { name: "BidSubmitted",     contract: "BidManagerV0_3" },
+  { name: "WinnerSelected",   contract: "BidManagerV0_3" },
+  { name: "IntentCompleted",  contract: "IntentMarketplaceV0_3" },
+  { name: "IntentCancelled",  contract: "IntentMarketplaceV0_3" },
+];
+
+export async function getRecentEvents(lookbackBlocks = 1000): Promise<LiveEvent[]> {
+  const currentHeight = await getCurrentBlockHeight();
+  const startBlock = Math.max(1, currentHeight - lookbackBlocks);
+
+  const allResults = await Promise.all(
+    LIVE_EVENT_SOURCES.map(async ({ name, contract }) => {
+      const raw = await queryEvents(
+        `A.c65395858a38d8ff.${contract}.${name}`,
+        startBlock,
+        currentHeight
+      );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (raw as any[]).map((e, i) => {
+        try {
+          const payloadStr = Buffer.from(e.payload, "base64").toString();
+          const parsed = JSON.parse(payloadStr);
+          const data = parseCDC(parsed) ?? {};
+          return {
+            id: `${e.block_height}-${e.transaction_id}-${i}`,
+            eventType: name,
+            blockHeight: parseInt(e.block_height, 10),
+            transactionId: e.transaction_id as string,
+            data,
+          } as LiveEvent;
+        } catch {
+          return null;
+        }
+      }).filter(Boolean) as LiveEvent[];
+    })
+  );
+
+  return allResults
+    .flat()
+    .sort((a, b) => b.blockHeight - a.blockHeight);
+}
 
 export function intentTypeLabel(intentType: number): "YIELD" | "SWAP" | "BRIDGE_YIELD" {
   if (intentType === 1) return "SWAP";
