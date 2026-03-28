@@ -1,588 +1,331 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React from "react";
 import { motion } from "framer-motion";
-import { Clock, RefreshCw } from "lucide-react";
-import { SubmitBidModal } from "@/components/solver/submit-bid-modal";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useWallet } from "@/lib/wallet-context";
-import {
-  getOpenIntentIds,
-  getIntent,
-  getBidsBySolver,
-  getBidsByIds,
-  type Intent,
-  type Bid,
-  intentTypeLabel,
-} from "@/lib/flow";
-import {
-  formatAmount,
-  type MockIntent,
-} from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import Link from "next/link";
 
-// MY_BIDS is now populated from chain via getBidsBySolver
+const CONTRACTS = [
+  { name: "IntentMarketplaceV0_3", address: "0xc65395858a38d8ff", note: "Intent creation + lifecycle" },
+  { name: "BidManagerV0_3",        address: "0xc65395858a38d8ff", note: "Bid submission + winner selection" },
+  { name: "IntentExecutorV0_3",    address: "0xc65395858a38d8ff", note: "Intent execution + gas escrow payout" },
+  { name: "FlowIntentsComposerV4", address: "0x5cc14D3509639a819f4e8f796128Fcc1C9576D95", note: "EVM strategy executor" },
+];
 
-// Convert an on-chain Intent to the MockIntent shape used by SubmitBidModal
-function toMockIntent(intent: Intent): MockIntent {
-  const type = intentTypeLabel(intent.intentType);
-  return {
-    id: intent.id,
-    type: type === "BRIDGE_YIELD" ? "YIELD" : type,
-    amount: intent.principalAmount,
-    status: (["Open", "BidSelected", "Active", "Completed", "Cancelled"][intent.status] ?? "Open") as MockIntent["status"],
-    targetAPY: intent.targetAPY > 0 ? intent.targetAPY : undefined,
-    minAmountOut: intent.minAmountOut ?? undefined,
-    outputToken: intent.intentType === 1 ? "stgUSDC" : undefined,
-    durationDays: intent.durationDays,
-    createdAt: new Date(intent.createdAt * 1000),
-    bids: [],
-  };
-}
+const EVENTS = [
+  { name: "IntentMarketplaceV0_3.IntentCreated",   desc: "A new intent was posted. Fields: id, intentOwner, principalAmount, intentType, targetAPY, minAmountOut." },
+  { name: "BidManagerV0_3.BidSubmitted",           desc: "A solver submitted a bid. Fields: bidID, intentID, solverAddress, offeredAPY, offeredAmountOut, maxGasBid, score." },
+  { name: "BidManagerV0_3.WinnerSelected",         desc: "A winner was chosen. Fields: intentID, winningBidID, solverAddress. Winning solver should call executeIntent immediately." },
+  { name: "IntentMarketplaceV0_3.IntentCompleted", desc: "Execution succeeded. Fields: id, owner, finalAmount." },
+];
 
-// Estimate time remaining from expiryBlock
-function timeRemainingFromBlock(expiryBlock: number, currentBlock: number): string {
-  const blocksLeft = expiryBlock - currentBlock;
-  if (blocksLeft <= 0) return "Expired";
-  // Flow mainnet ~1 block per second
-  const secondsLeft = blocksLeft;
-  const hours = Math.floor(secondsLeft / 3600);
-  const days = Math.floor(hours / 24);
-  if (days > 0) return `${days}d ${hours % 24}h`;
-  const minutes = Math.floor((secondsLeft % 3600) / 60);
-  return `${hours}h ${minutes}m`;
-}
+const STRATEGIES = [
+  {
+    id: "ankr-stake",
+    label: "ankr-stake",
+    title: "Ankr Liquid Staking",
+    color: "#00C566",
+    desc: "Stake FLOW into Ankr's liquid staking pool. Produces aFLOWEVMb cert tokens. Best for YIELD intents.",
+    snippet: `// Encode an Ankr staking strategy
+const batch = client.encodeANKRStakeStrategy(
+  intent.principalAmount, // FLOW to stake
+  myEvmAddress,           // receives aFLOWEVMb
+)
 
-export default function SolverPage() {
-  const { isFlowConnected, connectFlow, flowUser } = useWallet();
-  const [selectedIntent, setSelectedIntent] = useState<MockIntent | null>(null);
-  const [bidModalOpen, setBidModalOpen] = useState(false);
-  const [filterType, setFilterType] = useState<"ALL" | "YIELD" | "SWAP">("ALL");
-  const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [allIntents, setAllIntents] = useState<MockIntent[]>([]);
-  const [currentBlock, setCurrentBlock] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [myBids, setMyBids] = useState<Bid[]>([]);
-  const [myBidsLoading, setMyBidsLoading] = useState(false);
+await client.submitBid({
+  intentID: intent.id,
+  offeredAPY: intent.targetAPY + 1.5, // offer 1.5% above target
+  strategy: 'ankr-stake',
+  maxGasBid: 0.001,
+  encodedBatch: batch,
+})`,
+  },
+  {
+    id: "punchswap-v2",
+    label: "punchswap-v2",
+    title: "PunchSwap UniV2 Swap",
+    color: "#0047FF",
+    desc: "Wrap FLOW → WFLOW → swap for stgUSDC via PunchSwap's UniV2 router. For SWAP intents.",
+    snippet: `// Encode a PunchSwap strategy
+const minOut = Math.floor((intent.minAmountOut ?? 0) * 1.02)
+const batch = client.encodeWrapAndSwapStrategy(
+  intent.principalAmount, // FLOW to wrap
+  intent.principalAmount, // WFLOW to swap (all of it)
+  TOKENS.stgUSDC,         // output token
+  myEvmAddress,           // receives stgUSDC
+  minOut,                 // min output (2% better than user's floor)
+)
 
-  const load = useCallback(async () => {
-    setRefreshing(true);
-    setError(null);
-    try {
-      // Get current block for time-remaining calculation
-      const blockRes = await fetch("https://rest-mainnet.onflow.org/v1/blocks?height=sealed");
-      let block = 0;
-      if (blockRes.ok) {
-        const blockData = await blockRes.json();
-        block = parseInt(blockData[0].header.height, 10);
-        setCurrentBlock(block);
-      }
+await client.submitBid({
+  intentID: intent.id,
+  offeredAmountOut: minOut,
+  strategy: 'punchswap-v2',
+  maxGasBid: 0.001,
+  encodedBatch: batch,
+})`,
+  },
+];
 
-      const ids = await getOpenIntentIds();
-      const intents = await Promise.all(ids.map((id) => getIntent(id)));
-      const valid = intents.filter(Boolean) as Intent[];
-      setAllIntents(valid.map(toMockIntent));
-    } catch (err) {
-      console.error("Failed to load intents:", err);
-      setError("Failed to load intents. Retrying...");
-    } finally {
-      setRefreshing(false);
-      setLoading(false);
-    }
-  }, []);
+const sectionReveal = {
+  initial: { opacity: 0, y: 16 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-60px" },
+  transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+} as const;
 
-  useEffect(() => {
-    load();
-    const interval = setInterval(load, 30_000);
-    return () => clearInterval(interval);
-  }, [load]);
-
-  // Load bids for the connected solver wallet
-  useEffect(() => {
-    if (!flowUser?.addr) return;
-    setMyBidsLoading(true);
-    getBidsBySolver(flowUser.addr)
-      .then((ids) => getBidsByIds(ids))
-      .then(setMyBids)
-      .catch(console.error)
-      .finally(() => setMyBidsLoading(false));
-  }, [flowUser?.addr]);
-
-  const openIntents = allIntents.filter(
-    (i) => i.status === "Open" && (filterType === "ALL" || i.type === filterType)
-  );
-
-  const handleBid = (intent: MockIntent) => {
-    setSelectedIntent(intent);
-    setBidModalOpen(true);
-  };
-
-  const timeRemaining = (intent: MockIntent) => {
-    // If we have a current block, compute from expiryBlock; fall back to date math
-    if (currentBlock > 0) {
-      // We need the on-chain expiryBlock — it's stored in the MockIntent via createdAt
-      // Since MockIntent doesn't carry expiryBlock, fall back to duration math
-    }
-    const expiry = intent.createdAt.getTime() + intent.durationDays * 24 * 60 * 60 * 1000;
-    const diff = expiry - Date.now();
-    if (diff <= 0) return "Expired";
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(hours / 24);
-    if (days > 0) return `${days}d ${hours % 24}h`;
-    return `${hours}h`;
-  };
-
+export default function SolverDocsPage() {
   return (
     <div className="min-h-screen py-12 px-4 sm:px-8" style={{ background: "#050509" }}>
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-4xl mx-auto">
+
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10"
-        >
-          <div>
-            <div
-              className="text-[10px] text-[#666660] uppercase tracking-widest mb-3"
-              style={{ fontFamily: "'Space Mono', monospace" }}
-            >
-              Solver Dashboard
-            </div>
-            <div className="flex items-center gap-3">
-              <h1
-                className="text-3xl font-bold text-[#F5F5F0]"
-                style={{ letterSpacing: "-0.02em" }}
-              >
-                Open Intents
-              </h1>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 bg-[#00C566] rounded-full animate-pulse" />
-                <span
-                  className="text-[10px] text-[#00C566]"
-                  style={{ fontFamily: "'Space Mono', monospace" }}
-                >
-                  LIVE
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={load}
-              className={cn(
-                "p-2 border border-[#1a1a1a] text-[#666660] hover:text-[#F5F5F0] hover:border-[#0047FF]/40 transition-all",
-                refreshing && "animate-spin"
-              )}
-              style={{ background: "#0D0D0D" }}
-              title="Refresh"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
-            {!isFlowConnected && (
-              <Button variant="primary" size="sm" onClick={connectFlow}>
-                Connect to Bid
-              </Button>
-            )}
-          </div>
-        </motion.div>
-
-        {/* Stats bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="grid grid-cols-2 sm:grid-cols-4 gap-0 border border-[#1a1a1a] mb-6"
-        >
-          {[
-            { label: "Open Intents", value: loading ? "—" : openIntents.length, color: "#0047FF" },
-            {
-              label: "Total FLOW",
-              value: loading ? "—" : `${formatAmount(openIntents.reduce((s, i) => s + i.amount, 0))}`,
-              color: "#F5F5F0",
-            },
-            {
-              label: "Yield Intents",
-              value: loading ? "—" : openIntents.filter((i) => i.type === "YIELD").length,
-              color: "#00C566",
-            },
-            {
-              label: "Swap Intents",
-              value: loading ? "—" : openIntents.filter((i) => i.type === "SWAP").length,
-              color: "#F5F5F0",
-            },
-          ].map((stat, i) => (
-            <div
-              key={stat.label}
-              className={`p-5 ${i < 3 ? "border-r border-[#1a1a1a]" : ""}`}
-              style={{ background: "#0D0D0D" }}
-            >
-              <div
-                className="text-2xl font-bold mb-1"
-                style={{ fontFamily: "'Space Mono', monospace", color: stat.color }}
-              >
-                {stat.value}
-              </div>
-              <div className="text-xs text-[#666660]">{stat.label}</div>
-            </div>
-          ))}
-        </motion.div>
-
-        {/* Filter bar */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          className="flex items-center gap-0 border-b border-[#1a1a1a] mb-6"
-        >
-          {(["ALL", "YIELD", "SWAP"] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilterType(f)}
-              className="px-5 py-3 text-xs font-medium transition-all"
-              style={{
-                fontFamily: "'Space Mono', monospace",
-                color: filterType === f ? "#F5F5F0" : "#666660",
-                borderBottom: filterType === f ? "2px solid #0047FF" : "2px solid transparent",
-                marginBottom: "-1px",
-              }}
-            >
-              {f}
-            </button>
-          ))}
-          <span
-            className="ml-auto pr-4 text-xs text-[#666660]"
-            style={{ fontFamily: "'Space Mono', monospace" }}
-          >
-            {loading ? "loading..." : `${openIntents.length} intents`}
-          </span>
-        </motion.div>
-
-        {/* Intents table */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12 }}
-          className="mb-12"
-        >
-          <div className="border border-[#1a1a1a] overflow-hidden" style={{ background: "#0D0D0D" }}>
-            {/* Table header */}
-            <div
-              className="hidden sm:grid px-6 py-3 border-b border-[#1a1a1a] text-[10px] text-[#666660] uppercase tracking-widest"
-              style={{
-                fontFamily: "'Space Mono', monospace",
-                gridTemplateColumns: "80px 80px 1fr 1fr 80px 100px 120px",
-              }}
-            >
-              <div>ID</div>
-              <div>Type</div>
-              <div>Amount</div>
-              <div>Target</div>
-              <div>Bids</div>
-              <div>Expires</div>
-              <div />
-            </div>
-
-            {/* Loading skeleton */}
-            {loading ? (
-              <div className="divide-y divide-[#1a1a1a]">
-                {[0, 1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="hidden sm:grid px-6 py-4 items-center"
-                    style={{ gridTemplateColumns: "80px 80px 1fr 1fr 80px 100px 120px" }}
-                  >
-                    {[80, 60, 120, 140, 40, 80, 100].map((w, j) => (
-                      <div
-                        key={j}
-                        className="h-4 rounded animate-pulse bg-[#1a1a1a]"
-                        style={{ width: w }}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
-            ) : error ? (
-              <div className="text-center py-12 text-red-400">
-                <p className="text-sm font-mono">{error}</p>
-              </div>
-            ) : openIntents.length === 0 ? (
-              <div className="text-center py-16 text-[#666660]">
-                <div
-                  className="text-xs mb-2 uppercase tracking-widest"
-                  style={{ fontFamily: "'Space Mono', monospace" }}
-                >
-                  No Results
-                </div>
-                <p className="text-sm">No open intents matching your filter</p>
-              </div>
-            ) : (
-              <div>
-                {openIntents.map((intent, i) => (
-                  <motion.div
-                    key={intent.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.04 }}
-                    className="hidden sm:grid px-6 py-4 border-b border-[#1a1a1a] last:border-0 hover:bg-[#0047FF]/5 transition-colors items-center group"
-                    style={{
-                      gridTemplateColumns: "80px 80px 1fr 1fr 80px 100px 120px",
-                    }}
-                  >
-                    <div
-                      className="text-xs text-[#666660]"
-                      style={{ fontFamily: "'Space Mono', monospace" }}
-                    >
-                      #{intent.id}
-                    </div>
-                    <div>
-                      <Badge variant={intent.type === "YIELD" ? "green" : "blue"}>
-                        {intent.type}
-                      </Badge>
-                    </div>
-                    <div
-                      className="text-sm font-medium text-[#F5F5F0]"
-                      style={{ fontFamily: "'Space Mono', monospace" }}
-                    >
-                      {formatAmount(intent.amount)} FLOW
-                    </div>
-                    <div className="text-sm" style={{ fontFamily: "'Space Mono', monospace" }}>
-                      {intent.type === "YIELD" ? (
-                        <span className="text-[#00C566]">{intent.targetAPY}% APY</span>
-                      ) : (
-                        <span className="text-[#F5F5F0]">
-                          ≥{formatAmount(intent.minAmountOut || 0)} {intent.outputToken}
-                        </span>
-                      )}
-                    </div>
-                    <div
-                      className="text-xs"
-                      style={{ fontFamily: "'Space Mono', monospace" }}
-                    >
-                      {intent.bids.length > 0 ? (
-                        <span className="text-[#0047FF]">
-                          {intent.bids.length} bid{intent.bids.length > 1 ? "s" : ""}
-                        </span>
-                      ) : (
-                        <span className="text-[#1a1a1a]">—</span>
-                      )}
-                    </div>
-                    <div
-                      className="flex items-center gap-1.5 text-xs text-[#666660]"
-                      style={{ fontFamily: "'Space Mono', monospace" }}
-                    >
-                      <Clock className="w-3 h-3" />
-                      {timeRemaining(intent)}
-                    </div>
-                    <div className="flex justify-end">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleBid(intent)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-xs font-mono"
-                      >
-                        Submit Bid
-                      </Button>
-                    </div>
-                  </motion.div>
-                ))}
-
-                {/* Mobile cards */}
-                <div className="sm:hidden divide-y divide-[#1a1a1a]">
-                  {openIntents.map((intent) => (
-                    <div key={intent.id} className="p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="text-xs text-[#666660]"
-                            style={{ fontFamily: "'Space Mono', monospace" }}
-                          >
-                            #{intent.id}
-                          </span>
-                          <Badge variant={intent.type === "YIELD" ? "green" : "blue"}>
-                            {intent.type}
-                          </Badge>
-                        </div>
-                        <span
-                          className="text-xs text-[#666660]"
-                          style={{ fontFamily: "'Space Mono', monospace" }}
-                        >
-                          {timeRemaining(intent)}
-                        </span>
-                      </div>
-                      <div
-                        className="text-sm font-medium text-[#F5F5F0] mb-1"
-                        style={{ fontFamily: "'Space Mono', monospace" }}
-                      >
-                        {formatAmount(intent.amount)} FLOW
-                      </div>
-                      <div className="flex items-center justify-between mt-3">
-                        <span
-                          className="text-xs"
-                          style={{
-                            fontFamily: "'Space Mono', monospace",
-                            color: intent.type === "YIELD" ? "#00C566" : "#F5F5F0",
-                          }}
-                        >
-                          {intent.type === "YIELD"
-                            ? `${intent.targetAPY}% APY`
-                            : `≥${formatAmount(intent.minAmountOut || 0)} ${intent.outputToken}`}
-                        </span>
-                        <Button variant="primary" size="sm" onClick={() => handleBid(intent)}>
-                          Bid
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </motion.div>
-
-        {/* My Submitted Bids */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          className="mb-14"
         >
           <div
             className="text-[10px] text-[#666660] uppercase tracking-widest mb-4"
             style={{ fontFamily: "'Space Mono', monospace" }}
           >
-            My Submitted Bids
+            Technical Documentation
           </div>
+          <h1
+            className="text-4xl font-bold text-[#F5F5F0] mb-4"
+            style={{ letterSpacing: "-0.03em" }}
+          >
+            Build a Solver.
+          </h1>
+          <p className="text-[#9999A0] text-base leading-relaxed max-w-2xl">
+            Solvers are autonomous agents that monitor open intents, submit competitive bids,
+            and execute the winning strategy on-chain. Every successful execution earns the
+            solver the full gas escrow deposited by the user.
+          </p>
+        </motion.div>
 
-          {!isFlowConnected ? (
-            <div
-              className="border border-[#1a1a1a] p-8 text-center text-[#666660]"
-              style={{ background: "#0D0D0D" }}
-            >
-              <p className="text-sm mb-3">Connect your wallet to see your bids</p>
-              <Button variant="primary" size="sm" onClick={connectFlow}>
-                Connect Wallet
-              </Button>
-            </div>
-          ) : myBidsLoading ? (
-            <div
-              className="border border-[#1a1a1a] p-8 text-center text-[#666660]"
-              style={{ background: "#0D0D0D" }}
-            >
-              <p className="text-sm">Loading your bids...</p>
-            </div>
-          ) : myBids.length === 0 ? (
-            <div
-              className="border border-[#1a1a1a] p-8 text-center text-[#666660]"
-              style={{ background: "#0D0D0D" }}
-            >
-              <p className="text-sm">No bids submitted yet</p>
-            </div>
-          ) : (
-            <div
-              className="border border-[#1a1a1a] overflow-hidden"
-              style={{ background: "#0D0D0D" }}
-            >
+        {/* How solvers work */}
+        <motion.section {...sectionReveal} className="mb-14">
+          <div
+            className="text-[10px] text-[#0047FF] uppercase tracking-widest mb-6"
+            style={{ fontFamily: "'Space Mono', monospace" }}
+          >
+            How it works
+          </div>
+          <div className="border border-[#1a1a1a]" style={{ background: "#0D0D0D" }}>
+            {[
+              { step: "01", title: "Listen for intents", desc: "Poll getOpenIntents() or subscribe to IntentCreated events. Every new intent is an opportunity." },
+              { step: "02", title: "Submit a bid", desc: "Call BidManagerV0_3.submitBid() with your offered terms (APY or amountOut) and an ABI-encoded strategy batch. Lower gas bids and better terms score higher." },
+              { step: "03", title: "Watch for WinnerSelected", desc: "When the user (or the auto-selector) picks a winner, a WinnerSelected event fires. Check if your address won." },
+              { step: "04", title: "Execute & collect", desc: "Call IntentExecutorV0_3.executeIntentV2(). The contract runs your encoded EVM strategy and pays you the full gas escrow." },
+            ].map((item, i, arr) => (
               <div
-                className="hidden sm:grid px-6 py-3 border-b border-[#1a1a1a] text-[10px] text-[#666660] uppercase tracking-widest"
-                style={{
-                  fontFamily: "'Space Mono', monospace",
-                  gridTemplateColumns: "60px 80px 80px 1fr 120px 100px 80px",
-                }}
+                key={item.step}
+                className={`p-6 flex gap-6 ${i < arr.length - 1 ? "border-b border-[#1a1a1a]" : ""}`}
               >
-                <div>Bid ID</div>
-                <div>Intent</div>
-                <div>Type</div>
-                <div>Offered</div>
-                <div>Status</div>
-                <div>Score</div>
-                <div>Gas Bid</div>
+                <div
+                  className="text-3xl font-bold text-[#1a1a1a] shrink-0 w-12 text-right"
+                  style={{ fontFamily: "'Space Mono', monospace" }}
+                >
+                  {item.step}
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-[#F5F5F0] mb-1">{item.title}</div>
+                  <p className="text-sm text-[#9999A0] leading-relaxed">{item.desc}</p>
+                </div>
               </div>
-              {myBids.map((bid) => {
-                // Determine intent type label
-                const intentType = bid.offeredAPY != null ? "YIELD" : "SWAP";
-                const offeredStr = bid.offeredAPY != null
-                  ? `${bid.offeredAPY.toFixed(2)}% APY`
-                  : bid.offeredAmountOut != null
-                  ? `${bid.offeredAmountOut.toFixed(4)} out`
-                  : "—";
-                // Find matching intent to get status cross-reference
-                const matchingIntent = allIntents.find((i) => i.id === bid.intentID);
-                let bidStatus = "Pending";
-                if (matchingIntent) {
-                  const intentStatus = matchingIntent.status;
-                  if (intentStatus === "Completed" || intentStatus === "Active") {
-                    // We'd need winningBidID from the intent — use allIntents source Intent
-                    bidStatus = "Pending"; // default without winningBidID in MockIntent
-                  }
-                }
-                return (
-                  <div
-                    key={bid.id}
-                    className="hidden sm:grid px-6 py-4 border-b border-[#1a1a1a] last:border-0 items-center"
+            ))}
+          </div>
+        </motion.section>
+
+        {/* Quick start */}
+        <motion.section {...sectionReveal} className="mb-14">
+          <div
+            className="text-[10px] text-[#0047FF] uppercase tracking-widest mb-6"
+            style={{ fontFamily: "'Space Mono', monospace" }}
+          >
+            Quick Start
+          </div>
+          <div className="border border-[#1a1a1a]" style={{ background: "#0D0D0D" }}>
+            <div className="px-4 py-2 border-b border-[#1a1a1a] flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+              <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#00C566]/50" />
+              <span
+                className="ml-2 text-[10px] text-[#9999A0]"
+                style={{ fontFamily: "'Space Mono', monospace" }}
+              >
+                terminal
+              </span>
+            </div>
+            <pre
+              className="p-5 text-[12px] leading-relaxed overflow-x-auto text-[#9999A0]"
+              style={{ fontFamily: "'Space Mono', monospace" }}
+            >{`# Clone and install
+git clone https://github.com/your-repo/flowintents
+cd flowintents/sdk && npm install
+
+# Set your credentials
+export SOLVER_PK="your_flow_private_key_hex"
+export SOLVER_ADDRESS="0xYourFlowCadenceAddress"
+
+# Run the example aggressive bot
+npx ts-node solver-bot-a.ts
+
+# Or run both bots competing in parallel
+bash run-demo.sh`}
+            </pre>
+          </div>
+          <p className="text-xs text-[#666660] mt-3" style={{ fontFamily: "'Space Mono', monospace" }}>
+            See <code className="text-[#9999A0]">sdk/solver-bot-a.ts</code> and <code className="text-[#9999A0]">sdk/solver-bot-b.ts</code> for full working examples.
+          </p>
+        </motion.section>
+
+        {/* Strategies */}
+        <motion.section {...sectionReveal} className="mb-14">
+          <div
+            className="text-[10px] text-[#0047FF] uppercase tracking-widest mb-6"
+            style={{ fontFamily: "'Space Mono', monospace" }}
+          >
+            Built-in Strategies
+          </div>
+          <div className="space-y-6">
+            {STRATEGIES.map((s) => (
+              <div key={s.id} className="border border-[#1a1a1a]" style={{ background: "#0D0D0D" }}>
+                {/* Strategy header */}
+                <div className="px-6 py-4 border-b border-[#1a1a1a] flex items-center gap-3">
+                  <span
+                    className="px-2 py-0.5 text-[10px] font-bold border"
                     style={{
-                      gridTemplateColumns: "60px 80px 80px 1fr 120px 100px 80px",
+                      fontFamily: "'Space Mono', monospace",
+                      color: s.color,
+                      borderColor: `${s.color}40`,
+                      background: `${s.color}10`,
                     }}
                   >
-                    <div
-                      className="text-xs text-[#666660]"
-                      style={{ fontFamily: "'Space Mono', monospace" }}
-                    >
-                      #{bid.id}
-                    </div>
-                    <div
-                      className="text-xs text-[#666660]"
-                      style={{ fontFamily: "'Space Mono', monospace" }}
-                    >
-                      #{bid.intentID}
-                    </div>
-                    <div>
-                      <Badge variant={intentType === "YIELD" ? "green" : "blue"}>
-                        {intentType}
-                      </Badge>
-                    </div>
-                    <div
-                      className="text-sm font-medium text-[#F5F5F0]"
-                      style={{ fontFamily: "'Space Mono', monospace" }}
-                    >
-                      {offeredStr}
-                    </div>
-                    <div>
-                      <Badge variant="yellow">{bidStatus}</Badge>
-                    </div>
-                    <div
-                      className="text-xs text-[#00C566]"
-                      style={{ fontFamily: "'Space Mono', monospace" }}
-                    >
-                      {bid.score.toFixed(4)}
-                    </div>
-                    <div
-                      className="text-xs text-[#666660]"
-                      style={{ fontFamily: "'Space Mono', monospace" }}
-                    >
-                      {bid.maxGasBid} FLOW
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </motion.div>
-      </div>
+                    {s.label}
+                  </span>
+                  <span className="text-sm font-semibold text-[#F5F5F0]">{s.title}</span>
+                </div>
+                <div className="px-6 py-4 border-b border-[#1a1a1a]">
+                  <p className="text-sm text-[#9999A0]">{s.desc}</p>
+                </div>
+                {/* Code */}
+                <div className="px-4 py-2 border-b border-[#1a1a1a]">
+                  <span
+                    className="text-[10px] text-[#444440]"
+                    style={{ fontFamily: "'Space Mono', monospace" }}
+                  >
+                    example
+                  </span>
+                </div>
+                <pre
+                  className="p-5 text-[11px] leading-relaxed overflow-x-auto"
+                  style={{ fontFamily: "'Space Mono', monospace", color: "#9999A0" }}
+                >
+                  <code>{s.snippet}</code>
+                </pre>
+              </div>
+            ))}
+          </div>
+        </motion.section>
 
-      {selectedIntent && (
-        <SubmitBidModal
-          open={bidModalOpen}
-          onClose={() => {
-            setBidModalOpen(false);
-            setSelectedIntent(null);
-          }}
-          intent={selectedIntent}
-          isConnected={isFlowConnected}
-          onConnectFlow={connectFlow}
-        />
-      )}
+        {/* Events */}
+        <motion.section {...sectionReveal} className="mb-14">
+          <div
+            className="text-[10px] text-[#0047FF] uppercase tracking-widest mb-6"
+            style={{ fontFamily: "'Space Mono', monospace" }}
+          >
+            Events to listen to
+          </div>
+          <div className="border border-[#1a1a1a] overflow-hidden" style={{ background: "#0D0D0D" }}>
+            {EVENTS.map((evt, i) => (
+              <div key={evt.name} className={`p-5 ${i < EVENTS.length - 1 ? "border-b border-[#1a1a1a]" : ""}`}>
+                <div
+                  className="text-xs text-[#F5F5F0] font-bold mb-1.5"
+                  style={{ fontFamily: "'Space Mono', monospace" }}
+                >
+                  A.c65395858a38d8ff.{evt.name}
+                </div>
+                <p className="text-sm text-[#9999A0]">{evt.desc}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-[#444440] mt-3" style={{ fontFamily: "'Space Mono', monospace" }}>
+            Poll via REST: GET /v1/events?type=A.c65395858a38d8ff.BidManagerV0_3.WinnerSelected&start_height=N&end_height=M
+          </p>
+        </motion.section>
+
+        {/* Contracts */}
+        <motion.section {...sectionReveal} className="mb-14">
+          <div
+            className="text-[10px] text-[#0047FF] uppercase tracking-widest mb-6"
+            style={{ fontFamily: "'Space Mono', monospace" }}
+          >
+            Contract Addresses — Flow Mainnet
+          </div>
+          <div className="border border-[#1a1a1a] overflow-hidden" style={{ background: "#0D0D0D" }}>
+            {CONTRACTS.map((c, i) => (
+              <div
+                key={c.name}
+                className={`px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 ${i < CONTRACTS.length - 1 ? "border-b border-[#1a1a1a]" : ""}`}
+              >
+                <div>
+                  <div
+                    className="text-xs font-bold text-[#F5F5F0] mb-0.5"
+                    style={{ fontFamily: "'Space Mono', monospace" }}
+                  >
+                    {c.name}
+                  </div>
+                  <div className="text-[11px] text-[#666660]">{c.note}</div>
+                </div>
+                <div
+                  className="text-[11px] text-[#9999A0] font-mono"
+                  style={{ fontFamily: "'Space Mono', monospace" }}
+                >
+                  {c.address}
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.section>
+
+        {/* CTA */}
+        <motion.section {...sectionReveal}>
+          <div className="border border-[#0047FF]/20 p-8" style={{ background: "#0047FF08" }}>
+            <div
+              className="text-[10px] text-[#0047FF] uppercase tracking-widest mb-4"
+              style={{ fontFamily: "'Space Mono', monospace" }}
+            >
+              Ready to compete?
+            </div>
+            <h2 className="text-2xl font-bold text-[#F5F5F0] mb-3">
+              Start building your solver today.
+            </h2>
+            <p className="text-[#9999A0] text-sm mb-6 max-w-lg">
+              The FlowIntents SDK gives you everything you need: FCL signing, strategy encoders,
+              and working bot examples. Fork it and make it better.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/live">
+                <button
+                  className="px-6 py-2.5 text-sm font-medium text-white"
+                  style={{ background: "#0047FF", fontFamily: "'Space Grotesk', sans-serif" }}
+                >
+                  Watch Live Feed →
+                </button>
+              </Link>
+              <Link href="/app">
+                <button
+                  className="px-6 py-2.5 text-sm font-medium text-[#F5F5F0] border border-[#1a1a1a] hover:border-[#0047FF]/40 transition-all"
+                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                >
+                  Create Test Intent
+                </button>
+              </Link>
+            </div>
+          </div>
+        </motion.section>
+
+      </div>
     </div>
   );
 }
