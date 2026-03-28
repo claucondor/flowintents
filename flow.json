@@ -1,5 +1,11 @@
 {
 	"contracts": {
+		"EVMTransferIndexer": {
+			"source": "cadence/contracts/EVMTransferIndexer.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
 		"BidManagerV0_1": {
 			"source": "cadence/contracts/BidManagerV0_1.cdc",
 			"aliases": {
@@ -262,6 +268,7 @@
 	"deployments": {
 		"emulator": {
 			"emulator-account": [
+				"EVMTransferIndexer",
 				"IntentMarketplaceV0_1",
 				"SolverRegistryV0_1",
 				"BidManagerV0_1",
