@@ -17,11 +17,27 @@ node_modules/
 dist/
 out/
 
+# Next.js
+frontend/.next/
+frontend/next-env.d.ts
+frontend/tsconfig.tsbuildinfo
+
 # Foundry
 evm/out/
 evm/cache/
 evm/broadcast/*/
 evm/deployments/*.json
+
+# Personal / session documents (not for public repo)
+PLAN.md
+DEMO.md
+STRATEGIES.md
+SOLVER_REGISTRATION.md
+E2E_TEST_CADENCE_SOLVER.md
+DYNAMIC_FEE_REPORT.md
+FLOWGRAPH_ERC20_SPEC.md
+ON_CHAIN_GRAPH.md
+*.txt
 
 # OS
 .DS_Store
