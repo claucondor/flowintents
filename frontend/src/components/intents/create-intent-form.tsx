@@ -69,6 +69,21 @@ export function CreateIntentForm() {
           limit: 1000,
         });
         setTxResult({ success: true, txId });
+        // #region agent log
+        fetch("http://127.0.0.1:7819/ingest/924f38bc-b7b9-482e-af92-1cc06af9fad0", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ee4215" },
+          body: JSON.stringify({
+            sessionId: "ee4215",
+            runId: "post-fix",
+            hypothesisId: "A",
+            location: "create-intent-form.tsx:SWAP",
+            message: "create swap intent mutate sealed path",
+            data: { txId },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
       } else {
         const txId = await fcl.mutate({
           cadence: CREATE_YIELD_INTENT_TX,
@@ -83,6 +98,21 @@ export function CreateIntentForm() {
           limit: 1000,
         });
         setTxResult({ success: true, txId });
+        // #region agent log
+        fetch("http://127.0.0.1:7819/ingest/924f38bc-b7b9-482e-af92-1cc06af9fad0", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ee4215" },
+          body: JSON.stringify({
+            sessionId: "ee4215",
+            runId: "post-fix",
+            hypothesisId: "A",
+            location: "create-intent-form.tsx:YIELD",
+            message: "create yield intent mutate sealed path",
+            data: { txId },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Transaction failed";
