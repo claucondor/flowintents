@@ -21,6 +21,41 @@ import {
   flowToAtto,
 } from './src/strategies'
 import { TOKENS } from './src/types'
+import { createPublicClient, http, parseAbi } from 'viem'
+import { defineChain } from 'viem'
+
+// ── Flow EVM client for on-chain price queries ───────────────────────────────
+
+const flowEVM = defineChain({
+  id: 747,
+  name: 'Flow EVM',
+  nativeCurrency: { name: 'FLOW', symbol: 'FLOW', decimals: 18 },
+  rpcUrls: { default: { http: ['https://mainnet.evm.nodes.onflow.org'] } },
+})
+
+const evmClient = createPublicClient({ chain: flowEVM, transport: http() })
+
+const ROUTER_ABI = parseAbi([
+  'function getAmountsOut(uint256 amountIn, address[] calldata path) external view returns (uint256[] memory amounts)',
+])
+
+/**
+ * Query PunchSwap for the real output amount of a WFLOW→tokenOut swap.
+ * Returns the output in token's native decimals (e.g. 6 for stgUSDC).
+ */
+export async function getPunchSwapQuote(
+  amountInFlow: number,
+  tokenOut: string,
+): Promise<bigint> {
+  const amountIn = flowToAtto(amountInFlow)
+  const result = await evmClient.readContract({
+    address: TOKENS.PUNCH_ROUTER as `0x${string}`,
+    abi: ROUTER_ABI,
+    functionName: 'getAmountsOut',
+    args: [amountIn, [TOKENS.WFLOW as `0x${string}`, tokenOut as `0x${string}`]],
+  })
+  return result[1] // output amount in token's smallest unit
+}
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -615,18 +650,29 @@ export async function runSolverLoop(profile: SolverProfile) {
             biddedIntents.add(intentId)
             log('green', name, `  Bid submitted — tx: ${txId.slice(0, 16)}… offeredAPY: ${offeredAPY.toFixed(2)}%`)
           } else if (intent.intentType === 'Swap') {
-            const minOut = intent.minAmountOut ?? 0
-            const offeredAmountOut = minOut * profile.swapAmountOutMultiplier
-            const batch = buildSwapBatch(intent.principalAmount, Math.floor(offeredAmountOut), evmAddress)
+            // Query PunchSwap for real market price instead of trusting minAmountOut
+            const quoteRaw = await getPunchSwapQuote(intent.principalAmount, TOKENS.stgUSDC)
+            // stgUSDC has 6 decimals — convert to UFix64-style float
+            const offeredAmountOut = Number(quoteRaw) / 1e6
+            // Use a conservative minAmountOut for the on-chain swap (5% slippage from quote)
+            const swapMinOut = BigInt(Math.floor(Number(quoteRaw) * 0.95))
+            log(color, name, `  PunchSwap quote: ${intent.principalAmount} FLOW → ${offeredAmountOut.toFixed(6)} stgUSDC`)
+            const batch = encodeWrapAndSwapStrategy(
+              intent.principalAmount,
+              intent.principalAmount,
+              TOKENS.stgUSDC,
+              evmAddress,
+              swapMinOut,
+            )
             const txId = await submitBidTx({
               intentID: intentId,
               offeredAmountOut,
               maxGasBid: profile.maxGasBid,
-              strategy: 'punchswap-v2',
+              strategy: 'wrap-and-swap-punchswap',
               encodedBatch: batch,
             }, address, privateKey)
             biddedIntents.add(intentId)
-            log('green', name, `  Bid submitted — tx: ${txId.slice(0, 16)}… offeredOut: ${offeredAmountOut.toFixed(4)}`)
+            log('green', name, `  Bid submitted — tx: ${txId.slice(0, 16)}… offeredOut: ${offeredAmountOut.toFixed(6)} stgUSDC`)
           } else {
             log('gray', name, `  Skipping intent #${intentId} (unsupported type: ${intent.intentType})`)
           }

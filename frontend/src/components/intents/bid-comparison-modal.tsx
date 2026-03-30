@@ -50,6 +50,7 @@ export function BidComparisonModal({
         args: (arg: (v: string, t: unknown) => unknown, t: { UInt64: unknown }) => [
           arg(intent.id.toString(), t.UInt64),
         ],
+        limit: 1000,
       });
       setTxId(id as string);
       await fcl.tx(id).onceSealed();

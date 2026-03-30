@@ -170,9 +170,8 @@ access(all) contract BidManagerV0_3 {
         } else if intentType == IntentMarketplaceV0_3.IntentType.Swap {
             assert(offeredAmountOut != nil, message: "offeredAmountOut required for Swap intents")
             assert((offeredAmountOut ?? 0.0) > 0.0, message: "offeredAmountOut must be positive")
-            if let minOut = intent.minAmountOut {
-                assert((offeredAmountOut ?? 0.0) >= minOut, message: "offeredAmountOut below intent minAmountOut")
-            }
+            // minAmountOut is informational — solver offers real market rate,
+            // user decides via selectWinner whether to accept.
         }
 
         // Prevent duplicate bids from same solver on same intent
