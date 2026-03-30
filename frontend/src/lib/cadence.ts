@@ -1,7 +1,7 @@
 export const CREATE_SWAP_INTENT_TX = `
-import FungibleToken from "FungibleToken"
-import FlowToken from "FlowToken"
-import IntentMarketplaceV0_3 from "IntentMarketplaceV0_3"
+import FungibleToken from 0xFungibleToken
+import FlowToken from 0xFlowToken
+import IntentMarketplaceV0_3 from 0xIntentMarketplaceV0_3
 
 transaction(
     amount: UFix64,
@@ -48,9 +48,9 @@ transaction(
 `;
 
 export const CREATE_YIELD_INTENT_TX = `
-import FungibleToken from "FungibleToken"
-import FlowToken from "FlowToken"
-import IntentMarketplaceV0_3 from "IntentMarketplaceV0_3"
+import FungibleToken from 0xFungibleToken
+import FlowToken from 0xFlowToken
+import IntentMarketplaceV0_3 from 0xIntentMarketplaceV0_3
 
 transaction(
     amount: UFix64,
@@ -95,7 +95,7 @@ transaction(
 `;
 
 export const SUBMIT_BID_TX = `
-import BidManagerV0_3 from "BidManagerV0_3"
+import BidManagerV0_3 from 0xBidManagerV0_3
 
 transaction(
     intentID: UInt64,
@@ -131,7 +131,7 @@ transaction(
 `;
 
 export const SELECT_WINNER_TX = `
-import BidManagerV0_3 from "BidManagerV0_3"
+import BidManagerV0_3 from 0xBidManagerV0_3
 
 transaction(intentID: UInt64) {
     let callerAddress: Address
@@ -148,10 +148,10 @@ transaction(intentID: UInt64) {
 `;
 
 export const EXECUTE_INTENT_TX = `
-import EVM from "EVM"
-import FungibleToken from "FungibleToken"
-import FlowToken from "FlowToken"
-import IntentExecutorV0_3 from "IntentExecutorV0_3"
+import EVM from 0xEVM
+import FungibleToken from 0xFungibleToken
+import FlowToken from 0xFlowToken
+import IntentExecutorV0_3 from 0xIntentExecutorV0_3
 
 transaction(intentID: UInt64) {
     let coa: auth(EVM.Call) &EVM.CadenceOwnedAccount
@@ -184,7 +184,7 @@ transaction(intentID: UInt64) {
 `;
 
 export const GET_OPEN_INTENTS_SCRIPT = `
-import IntentMarketplaceV0_3 from "IntentMarketplaceV0_3"
+import IntentMarketplaceV0_3 from 0xIntentMarketplaceV0_3
 
 access(all) fun main(): [UInt64] {
     let marketplace = getAccount(IntentMarketplaceV0_3.deployerAddress)
@@ -196,7 +196,7 @@ access(all) fun main(): [UInt64] {
 `;
 
 export const GET_INTENT_SCRIPT = `
-import IntentMarketplaceV0_3 from "IntentMarketplaceV0_3"
+import IntentMarketplaceV0_3 from 0xIntentMarketplaceV0_3
 
 access(all) fun main(intentID: UInt64): IntentMarketplaceV0_3.IntentView? {
     let marketplace = getAccount(IntentMarketplaceV0_3.deployerAddress)

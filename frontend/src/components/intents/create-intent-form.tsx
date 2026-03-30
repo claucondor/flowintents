@@ -78,7 +78,6 @@ export function CreateIntentForm() {
             arg(duration.toString(), t.UInt64),
             arg(expiryBlock.toString(), t.UInt64),
             arg(GAS_ESCROW_AMOUNT.toFixed(8), t.UFix64),
-            arg(null, t.Optional(t.String)),
           ],
           limit: 1000,
         });

@@ -13,5 +13,6 @@ export function configureFCL() {
     "0xIntentMarketplaceV0_3": "0xc65395858a38d8ff",
     "0xBidManagerV0_3": "0xc65395858a38d8ff",
     "0xIntentExecutorV0_3": "0xc65395858a38d8ff",
+    "0xEVM": "0xe467b9dd11fa00df",
   });
 }
