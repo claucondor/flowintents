@@ -14,5 +14,9 @@ export function configureFCL() {
     "0xBidManagerV0_3": "0xc65395858a38d8ff",
     "0xIntentExecutorV0_3": "0xc65395858a38d8ff",
     "0xEVM": "0xe467b9dd11fa00df",
+    // V0_4 contracts (user-executed intent model)
+    "0xIntentMarketplaceV0_4": "0xc65395858a38d8ff",
+    "0xBidManagerV0_4": "0xc65395858a38d8ff",
+    "0xIntentExecutorV0_4": "0xc65395858a38d8ff",
   });
 }
