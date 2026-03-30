@@ -85,6 +85,21 @@ export function CreateIntentForm() {
         }).catch(() => {});
         // #endregion
       } else {
+        // #region agent log
+        fetch("http://127.0.0.1:7819/ingest/924f38bc-b7b9-482e-af92-1cc06af9fad0", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ee4215" },
+          body: JSON.stringify({
+            sessionId: "ee4215",
+            runId: "mainnet-sig-match",
+            hypothesisId: "B",
+            location: "create-intent-form.tsx:YIELD:pre-mutate",
+            message: "yield intent mutate — tx declares 5 args, createYieldIntent call 6 params (deployed mainnet)",
+            data: { fclArgCount: 5 },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
         const txId = await fcl.mutate({
           cadence: CREATE_YIELD_INTENT_TX,
           args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
@@ -93,7 +108,6 @@ export function CreateIntentForm() {
             arg(duration.toString(), t.UInt64),
             arg(expiryBlock.toString(), t.UInt64),
             arg(GAS_ESCROW_AMOUNT.toFixed(8), t.UFix64),
-            arg(null, t.Optional(t.String)),
           ],
           limit: 1000,
         });
