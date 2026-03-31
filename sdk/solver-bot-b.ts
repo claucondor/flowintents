@@ -1,61 +1,126 @@
 /**
- * solver-bot-b.ts — "Conservative" solver bot for FlowIntents.
+ * solver-bot-b.ts — "Multi-Hop" solver bot for FlowIntents V0_4.
  *
  * Strategy:
- *   - YIELD intents: offers targetAPY - 0.5% (barely meets user target)
- *   - SWAP intents:  offers exact minAmountOut (no bonus)
- *   - Higher gas bid: 0.003 FLOW (takes more of the escrow)
- *   - Execution: ankr-stake (yield), punchswap-v2 (swap)
- *
- * This bot is intentionally less attractive than Bot-A — it demonstrates
- * competition. In a live market, Bot-B would rarely win unless Bot-A isn't
- * running or has a worse score for other reasons.
+ *   - SWAP intents: WFLOW → USDF → stgUSDC via PunchSwap multi-hop
+ *   - YIELD intents: Ankr stake (same as Bot A)
+ *   - Competes with Bot A which uses direct WFLOW → stgUSDC
  *
  * Run:
- *   SOLVER_PK_B=<hex_key> SOLVER_ADDRESS_B=0x... SOLVER_EVM_ADDRESS_B=0x... \
- *     npx ts-node solver-bot-b.ts
+ *   SOLVER_PK=<hex_key> SOLVER_ADDRESS=0x... \
+ *     npx tsx solver-bot-b.ts
  */
 
-import { runSolverLoop, configureFCL } from './solver-lib'
+import {
+  configureFCL,
+  log,
+  getOpenIntentIds,
+  getIntent,
+  getBidsBySolver,
+  submitBidTx,
+  getPunchSwapMultiHopQuote,
+  getCurrentBlockHeight,
+  COMPOSER_V5,
+  POLL_INTERVAL_MS,
+} from './solver-lib'
+import { encodeMultiHopSwapStrategy, encodeAlphaYieldStrategy } from './src/strategies'
+import { TOKENS } from './src/types'
 
-// ── Config from environment ───────────────────────────────────────────────────
+// ── Config ───────────────────────────────────────────────────────────────────
 
-const SOLVER_PK = process.env.SOLVER_PK_B ?? process.env.BOT_B_PK ?? ''
-const SOLVER_ADDRESS = process.env.SOLVER_ADDRESS_B ?? process.env.BOT_B_ADDRESS ?? ''
-const SOLVER_EVM_ADDRESS = process.env.SOLVER_EVM_ADDRESS_B ?? process.env.BOT_B_EVM_ADDRESS ?? '0x0000000000000000000000000000000000000000'
+const SOLVER_PK = process.env.SOLVER_PK ?? process.env.BOT_B_PK ?? ''
+const SOLVER_ADDRESS = process.env.SOLVER_ADDRESS ?? process.env.BOT_B_ADDRESS ?? ''
 
 if (!SOLVER_PK || !SOLVER_ADDRESS) {
-  console.error('\x1b[31m[Bot-B] ERROR: SOLVER_PK_B and SOLVER_ADDRESS_B env vars are required.\x1b[0m')
-  console.error('  export SOLVER_PK_B=<hex_private_key>')
-  console.error('  export SOLVER_ADDRESS_B=0x...')
-  console.error('  export SOLVER_EVM_ADDRESS_B=0x...  (optional)')
+  console.error('\x1b[31m[Bot-B] ERROR: SOLVER_PK and SOLVER_ADDRESS env vars required.\x1b[0m')
   process.exit(1)
 }
 
-// ── FCL config ────────────────────────────────────────────────────────────────
-
 configureFCL()
 
-// ── Launch ────────────────────────────────────────────────────────────────────
+// ── Launch ───────────────────────────────────────────────────────────────────
 
 console.log('\x1b[35m╔══════════════════════════════════════════════════════╗\x1b[0m')
-console.log('\x1b[35m║  FlowIntents Solver Bot B — CONSERVATIVE             ║\x1b[0m')
-console.log('\x1b[35m║  Offers safe deals: -0.5% APY, exact swap amount     ║\x1b[0m')
-console.log('\x1b[35m║  Gas bid: 0.003 FLOW (higher fee for solver)         ║\x1b[0m')
+console.log('\x1b[35m║  FlowIntents Solver Bot B — MULTI-HOP + ALPHA YIELD  ║\x1b[0m')
+console.log('\x1b[35m║  Swap: WFLOW → USDF → stgUSDC via PunchSwap          ║\x1b[0m')
+console.log('\x1b[35m║  Yield: AlphaYield WFLOW Vault (ERC-4626)            ║\x1b[0m')
+console.log('\x1b[35m║  Gas bid: 0.002 FLOW                                 ║\x1b[0m')
 console.log('\x1b[35m╚══════════════════════════════════════════════════════╝\x1b[0m')
 
-runSolverLoop({
-  name: 'Bot-B',
-  address: SOLVER_ADDRESS,
-  privateKey: SOLVER_PK,
-  evmAddress: SOLVER_EVM_ADDRESS,
-  color: 'magenta',
+const MAX_GAS_BID = 0.002
+const biddedIntents = new Set<number>()
 
-  // Conservative bidding: offer LESS than what the user asked for
-  yieldAPYBonus: -0.5,           // Yield: offer targetAPY - 0.5%
-  swapAmountOutMultiplier: 1.0,  // Swap: offer exactly minAmountOut (no bonus)
-  maxGasBid: 0.003,              // Higher gas bid — takes more from escrow
-}).catch((err) => {
-  console.error('\x1b[31m[Bot-B] Fatal error:\x1b[0m', err)
-  process.exit(1)
-})
+async function tick() {
+  try {
+    const currentBlock = await getCurrentBlockHeight()
+    const openIds = await getOpenIntentIds()
+    log('magenta', 'Bot-B', `Poll — block ${currentBlock} — ${openIds.length} open intent(s)`)
+
+    for (const intentId of openIds) {
+      if (biddedIntents.has(intentId)) continue
+
+      const intent = await getIntent(intentId)
+      if (!intent || intent.status !== 'Open') continue
+
+      try {
+        if (intent.intentType === 'Yield') {
+          // AlphaYield WFLOW Vault — ERC-4626
+          const offeredAPY = 5.0 // AlphaYield competitive rate
+          const batch = encodeAlphaYieldStrategy(intent.principalAmount, COMPOSER_V5)
+          log('magenta', 'Bot-B', `  AlphaYield: ${intent.principalAmount} FLOW → syWFLOWv (~${offeredAPY}% APY)`)
+          const txId = await submitBidTx({
+            intentID: intentId,
+            offeredAPY,
+            maxGasBid: MAX_GAS_BID,
+            strategy: 'alphayield-wflow-vault',
+            encodedBatch: batch,
+          }, SOLVER_ADDRESS, SOLVER_PK)
+          biddedIntents.add(intentId)
+          log('green', 'Bot-B', `  Bid submitted — tx: ${txId.slice(0, 16)}…`)
+
+        } else if (intent.intentType === 'Swap') {
+          // Multi-hop: WFLOW → USDF → stgUSDC
+          const quoteRaw = await getPunchSwapMultiHopQuote(
+            intent.principalAmount, TOKENS.USDF, TOKENS.stgUSDC
+          )
+          const offeredAmountOut = Number(quoteRaw) / 1e6
+          const swapMinOut = BigInt(Math.floor(Number(quoteRaw) * 0.95))
+
+          log('magenta', 'Bot-B', `  Multi-hop quote: ${intent.principalAmount} FLOW → USDF → ${offeredAmountOut.toFixed(6)} stgUSDC`)
+
+          const batch = encodeMultiHopSwapStrategy(
+            intent.principalAmount,
+            TOKENS.USDF,
+            TOKENS.stgUSDC,
+            COMPOSER_V5,
+            swapMinOut,
+          )
+
+          const txId = await submitBidTx({
+            intentID: intentId,
+            offeredAmountOut,
+            maxGasBid: MAX_GAS_BID,
+            strategy: 'multihop-wflow-usdf-stgusdc',
+            encodedBatch: batch,
+          }, SOLVER_ADDRESS, SOLVER_PK)
+          biddedIntents.add(intentId)
+          log('green', 'Bot-B', `  Bid submitted — tx: ${txId.slice(0, 16)}… offeredOut: ${offeredAmountOut.toFixed(6)} stgUSDC`)
+
+        } else {
+          log('gray', 'Bot-B', `  Skipping intent #${intentId} (unsupported type)`)
+          biddedIntents.add(intentId)
+        }
+      } catch (err) {
+        log('red', 'Bot-B', `  Bid failed for intent #${intentId}: ${(err as Error).message?.slice(0, 200) ?? err}`)
+        if (String(err).includes('already') || String(err).includes('duplicate')) {
+          biddedIntents.add(intentId)
+        }
+      }
+    }
+  } catch (err) {
+    log('red', 'Bot-B', `Poll error: ${err}`)
+  }
+}
+
+// Run
+tick().then(() => setInterval(tick, POLL_INTERVAL_MS))

@@ -38,6 +38,10 @@ export const TOKENS = {
   MOREPool: '0xbC92aaC2DBBF42215248B5688eB3D3d2b32F2c8d',
   /** PunchSwap UniV2-style router */
   PUNCH_ROUTER: '0xf45AFe28fd5519d5f8C1d4787a4D5f724C0eFa4d',
+  /** USDF (USD Flow / PYUSD0 bridged) */
+  USDF: '0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED',
+  /** AlphaYield WFLOW Vault (ERC-4626) */
+  ALPHA_WFLOW_VAULT: '0xcbf9a7753f9d2d0e8141ebb36d99f87acef98597',
   /** Ankr FlowStakingPool proxy */
   ANKR_STAKING_POOL: '0xFE8189A3016cb6A3668b8ccdAC520CE572D4287a',
 } as const

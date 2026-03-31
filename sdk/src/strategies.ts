@@ -265,6 +265,105 @@ export function encodeANKRStakeStrategy(amountFlow: number, _recipient: string):
 }
 
 /**
+ * Encode a multi-hop Wrap + Approve + Swap strategy.
+ *
+ * Steps:
+ *   [0] WFLOW.deposit{value}()
+ *   [1] WFLOW.approve(ROUTER, amount)
+ *   [2] ROUTER.swapExactTokensForTokens(amount, minOut, [WFLOW, hopToken, outputToken], recipient, deadline)
+ *   [3] Dummy balanceOf on outputToken (for ComposerV5 sweep detection)
+ *
+ * @param amountFlow    Total FLOW to wrap
+ * @param hopToken      Intermediate token address (e.g. USDF)
+ * @param outputToken   Final output token address (e.g. stgUSDC)
+ * @param recipient     EVM address for sweep (typically ComposerV5)
+ * @param minAmountOut  Minimum output in token's smallest unit
+ */
+export function encodeMultiHopSwapStrategy(
+  amountFlow: number,
+  hopToken: string,
+  outputToken: string,
+  recipient: string,
+  minAmountOut: bigint,
+): string {
+  const router = TOKENS.PUNCH_ROUTER as `0x${string}`
+  const wflow = TOKENS.WFLOW as `0x${string}`
+  const hop = hopToken as `0x${string}`
+  const tokenOut = outputToken as `0x${string}`
+  const to = recipient as `0x${string}`
+  const swapAmountAtto = flowToAtto(amountFlow)
+  const deadline = 4102444800n
+
+  const approvePacked = (SEL.ERC20_APPROVE +
+    encodeAbiParameters(parseAbiParameters('address, uint256'), [router, swapAmountAtto]).slice(2)
+  ) as `0x${string}`
+
+  // 3-token path: WFLOW -> hopToken -> outputToken
+  const swapPacked = (SEL.SWAP_EXACT_TOKENS_FOR_TOKENS +
+    encodeAbiParameters(
+      parseAbiParameters('uint256, uint256, address[], address, uint256'),
+      [swapAmountAtto, minAmountOut, [wflow, hop, tokenOut], to, deadline],
+    ).slice(2)
+  ) as `0x${string}`
+
+  const dummyCallData = ('0x70a08231' +
+    encodeAbiParameters(parseAbiParameters('address'), ['0x0000000000000000000000000000000000000000' as `0x${string}`]).slice(2)
+  ) as `0x${string}`
+
+  const steps: Step[] = [
+    { protocol: PROTOCOL.CUSTOM, target: wflow, callData: SEL.WFLOW_DEPOSIT, value: flowToAtto(amountFlow) },
+    { protocol: PROTOCOL.CUSTOM, target: wflow, callData: approvePacked, value: 0n },
+    { protocol: PROTOCOL.CUSTOM, target: router, callData: swapPacked, value: 0n },
+    { protocol: PROTOCOL.CUSTOM, target: tokenOut, callData: dummyCallData, value: 0n },
+  ]
+
+  return encodeSteps(steps)
+}
+
+/**
+ * Encode an AlphaYield WFLOW Vault deposit strategy (ERC-4626).
+ *
+ * Steps:
+ *   [0] WFLOW.deposit{value}()        — wrap FLOW to WFLOW
+ *   [1] WFLOW.approve(vault, amount)   — approve vault to spend WFLOW
+ *   [2] vault.deposit(amount, composer) — deposit WFLOW, shares to composer
+ *   [3] Dummy balanceOf on vault        — for ComposerV5 sweep detection of syWFLOWv shares
+ *
+ * @param amountFlow  Amount of FLOW to deposit
+ * @param recipient   Composer address (shares swept to user after)
+ */
+export function encodeAlphaYieldStrategy(amountFlow: number, recipient: string): string {
+  const wflow = TOKENS.WFLOW as `0x${string}`
+  const vault = TOKENS.ALPHA_WFLOW_VAULT as `0x${string}`
+  const to = recipient as `0x${string}`
+  const amountAtto = flowToAtto(amountFlow)
+
+  // WFLOW.approve(vault, amount)
+  const approvePacked = (SEL.ERC20_APPROVE +
+    encodeAbiParameters(parseAbiParameters('address, uint256'), [vault, amountAtto]).slice(2)
+  ) as `0x${string}`
+
+  // vault.deposit(uint256 assets, address receiver) = 0x6e553f65
+  const depositPacked = ('0x6e553f65' +
+    encodeAbiParameters(parseAbiParameters('uint256, address'), [amountAtto, to]).slice(2)
+  ) as `0x${string}`
+
+  // Dummy call on vault itself (it's the share token too in ERC-4626)
+  const dummyCallData = ('0x70a08231' +
+    encodeAbiParameters(parseAbiParameters('address'), ['0x0000000000000000000000000000000000000000' as `0x${string}`]).slice(2)
+  ) as `0x${string}`
+
+  const steps: Step[] = [
+    { protocol: PROTOCOL.CUSTOM, target: wflow, callData: SEL.WFLOW_DEPOSIT, value: flowToAtto(amountFlow) },
+    { protocol: PROTOCOL.CUSTOM, target: wflow, callData: approvePacked, value: 0n },
+    { protocol: PROTOCOL.CUSTOM, target: vault, callData: depositPacked, value: 0n },
+    { protocol: PROTOCOL.CUSTOM, target: vault, callData: dummyCallData, value: 0n },
+  ]
+
+  return encodeSteps(steps)
+}
+
+/**
  * Encode a custom strategy from raw StrategyStep-like inputs.
  *
  * Useful when you have a pre-computed callData and need to wrap it

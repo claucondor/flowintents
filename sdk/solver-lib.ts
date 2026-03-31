@@ -57,6 +57,24 @@ export async function getPunchSwapQuote(
   return result[1] // output amount in token's smallest unit
 }
 
+/**
+ * Query PunchSwap for multi-hop: WFLOW → hopToken → tokenOut.
+ */
+export async function getPunchSwapMultiHopQuote(
+  amountInFlow: number,
+  hopToken: string,
+  tokenOut: string,
+): Promise<bigint> {
+  const amountIn = flowToAtto(amountInFlow)
+  const result = await evmClient.readContract({
+    address: TOKENS.PUNCH_ROUTER as `0x${string}`,
+    abi: ROUTER_ABI,
+    functionName: 'getAmountsOut',
+    args: [amountIn, [TOKENS.WFLOW as `0x${string}`, hopToken as `0x${string}`, tokenOut as `0x${string}`]],
+  })
+  return result[2] // final output
+}
+
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 export const DEPLOYER = '0xc65395858a38d8ff'
