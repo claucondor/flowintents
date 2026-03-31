@@ -63,6 +63,7 @@ export const DEPLOYER = '0xc65395858a38d8ff'
 export const ACCESS_NODE = 'https://rest-mainnet.onflow.org'
 export const POLL_INTERVAL_MS = 15_000
 export const EVENT_LOOKBACK_BLOCKS = 60  // ~1 min on Flow mainnet
+export const COMPOSER_V5 = '0x34BfEcBB547875a3bBA86521a56B06f8197f2913'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -657,11 +658,12 @@ export async function runSolverLoop(profile: SolverProfile) {
             // Use a conservative minAmountOut for the on-chain swap (5% slippage from quote)
             const swapMinOut = BigInt(Math.floor(Number(quoteRaw) * 0.95))
             log(color, name, `  PunchSwap quote: ${intent.principalAmount} FLOW → ${offeredAmountOut.toFixed(6)} stgUSDC`)
+            // Swap output goes to ComposerV5 so it can sweep to user's COA
             const batch = encodeWrapAndSwapStrategy(
               intent.principalAmount,
               intent.principalAmount,
               TOKENS.stgUSDC,
-              evmAddress,
+              COMPOSER_V5,
               swapMinOut,
             )
             const txId = await submitBidTx({
