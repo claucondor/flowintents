@@ -418,7 +418,7 @@ transaction(intentID: UInt64) {
             solverFlowReceiver: self.solverFlowReceiver
         )
 
-        if self.deliverySide == 0 {
+        if self.deliverySide == 0 && self.tokenOut.length > 2 {
             var tokenHex = self.tokenOut
             if tokenHex.length >= 2 && tokenHex.slice(from: 0, upTo: 2) == "0x" {
                 tokenHex = tokenHex.slice(from: 2, upTo: tokenHex.length)

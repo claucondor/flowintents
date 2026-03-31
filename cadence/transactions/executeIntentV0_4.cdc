@@ -69,7 +69,7 @@ transaction(intentID: UInt64) {
         )
 
         // Step 2: If CadenceVault delivery, bridge output tokens from EVM to Cadence
-        if self.deliverySide == 0 {
+        if self.deliverySide == 0 && self.tokenOut.length > 2 {
             // deliverySide 0 = CadenceVault
             // Construct the bridge vault type from the EVM token address
             // Pattern: A.<bridge_address>.EVMVMBridgedToken_<hex_addr>.Vault
