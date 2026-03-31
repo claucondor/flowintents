@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { TokenSelector } from "./token-selector";
 import { useWallet } from "@/lib/wallet-context";
 import {
-  GAS_ESCROW_AMOUNT,
   COMMISSION_ESCROW_AMOUNT,
   DURATION_OPTIONS,
   EVM_TOKEN_ADDRESSES,
@@ -17,8 +16,6 @@ import {
   DeliverySideKey,
 } from "@/config/constants";
 import {
-  CREATE_SWAP_INTENT_TX,
-  CREATE_YIELD_INTENT_TX,
   CREATE_SWAP_INTENT_V04_TX,
   CREATE_YIELD_INTENT_V04_TX,
 } from "@/lib/cadence";
@@ -28,8 +25,6 @@ import { cn } from "@/lib/utils";
 type IntentType = "YIELD" | "SWAP";
 type TokenKey = "FLOW" | "WFLOW" | "stgUSDC";
 type DurationKey = 7 | 30 | 90;
-type ProtocolVersion = "V0_3" | "V0_4";
-
 const BLOCKS_PER_DAY = 7200;
 
 const inputClass =
@@ -37,7 +32,6 @@ const inputClass =
 
 export function CreateIntentForm() {
   const { isFlowConnected, connectFlow, flowUser } = useWallet();
-  const [protocolVersion, setProtocolVersion] = useState<ProtocolVersion>("V0_4");
   const [intentType, setIntentType] = useState<IntentType>("YIELD");
   const [amount, setAmount] = useState("");
   const [outputToken, setOutputToken] = useState<TokenKey>("stgUSDC");
@@ -45,12 +39,12 @@ export function CreateIntentForm() {
   const [duration, setDuration] = useState<DurationKey>(30);
   const [deliverySide, setDeliverySide] = useState<DeliverySideKey>("COA");
   const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [commission, setCommission] = useState(COMMISSION_ESCROW_AMOUNT.toString());
   const [loading, setLoading] = useState(false);
   const [txResult, setTxResult] = useState<{ success: boolean; txId?: string; error?: string } | null>(null);
 
-  const isV04 = protocolVersion === "V0_4";
   const needsDeliveryAddress = deliverySide === "ExternalEVM" || deliverySide === "ExternalCadence";
-  const escrowAmount = isV04 ? COMMISSION_ESCROW_AMOUNT : GAS_ESCROW_AMOUNT;
+  const escrowAmount = parseFloat(commission) || COMMISSION_ESCROW_AMOUNT;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,76 +69,42 @@ export function CreateIntentForm() {
       }
       const expiryBlock = currentHeight + duration * BLOCKS_PER_DAY;
 
-      if (isV04) {
-        // V0_4: User-executed model — only deposit commission escrow
-        const tokenOutAddr = intentType === "SWAP"
-          ? (EVM_TOKEN_ADDRESSES[outputToken as keyof typeof EVM_TOKEN_ADDRESSES] ?? "")
-          : "";
-        const deliverySideValue = DELIVERY_SIDE[deliverySide];
-        const deliveryAddr = needsDeliveryAddress && deliveryAddress ? deliveryAddress : null;
+      const tokenOutAddr = intentType === "SWAP"
+        ? (EVM_TOKEN_ADDRESSES[outputToken as keyof typeof EVM_TOKEN_ADDRESSES] ?? "")
+        : "";
+      const deliverySideValue = DELIVERY_SIDE[deliverySide];
+      const deliveryAddr = needsDeliveryAddress && deliveryAddress ? deliveryAddress : null;
 
-        if (intentType === "SWAP") {
-          const txId = await fcl.mutate({
-            cadence: CREATE_SWAP_INTENT_V04_TX,
-            args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
-              arg(amountFloat.toFixed(8), t.UFix64),
-              arg(tokenOutAddr, t.String),
-              arg(deliverySideValue.toString(), t.UInt8),
-              arg(deliveryAddr, t.Optional(t.String)),
-              arg(duration.toString(), t.UInt64),
-              arg(expiryBlock.toString(), t.UInt64),
-              arg(escrowAmount.toFixed(8), t.UFix64),
-            ],
-            limit: 1000,
-          });
-          setTxResult({ success: true, txId });
-        } else {
-          const txId = await fcl.mutate({
-            cadence: CREATE_YIELD_INTENT_V04_TX,
-            args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
-              arg(amountFloat.toFixed(8), t.UFix64),
-              arg(targetAPY.toFixed(8), t.UFix64),
-              arg(deliverySideValue.toString(), t.UInt8),
-              arg(deliveryAddr, t.Optional(t.String)),
-              arg(duration.toString(), t.UInt64),
-              arg(expiryBlock.toString(), t.UInt64),
-              arg(escrowAmount.toFixed(8), t.UFix64),
-            ],
-            limit: 1000,
-          });
-          setTxResult({ success: true, txId });
-        }
+      if (intentType === "SWAP") {
+        const txId = await fcl.mutate({
+          cadence: CREATE_SWAP_INTENT_V04_TX,
+          args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
+            arg(amountFloat.toFixed(8), t.UFix64),
+            arg(tokenOutAddr, t.String),
+            arg(deliverySideValue.toString(), t.UInt8),
+            arg(deliveryAddr, t.Optional(t.String)),
+            arg(duration.toString(), t.UInt64),
+            arg(expiryBlock.toString(), t.UInt64),
+            arg(escrowAmount.toFixed(8), t.UFix64),
+          ],
+          limit: 1000,
+        });
+        setTxResult({ success: true, txId });
       } else {
-        // V0_3: Legacy model — deposit principal + gas escrow
-        if (intentType === "SWAP") {
-          const minAmountOut = amountFloat * 0.95;
-          const txId = await fcl.mutate({
-            cadence: CREATE_SWAP_INTENT_TX,
-            args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
-              arg(amountFloat.toFixed(8), t.UFix64),
-              arg(minAmountOut.toFixed(8), t.UFix64),
-              arg("100", t.UInt64),
-              arg(duration.toString(), t.UInt64),
-              arg(expiryBlock.toString(), t.UInt64),
-              arg(GAS_ESCROW_AMOUNT.toFixed(8), t.UFix64),
-            ],
-            limit: 1000,
-          });
-          setTxResult({ success: true, txId });
-        } else {
-          const txId = await fcl.mutate({
-            cadence: CREATE_YIELD_INTENT_TX,
-            args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
-              arg(amountFloat.toFixed(8), t.UFix64),
-              arg(targetAPY.toFixed(8), t.UFix64),
-              arg(duration.toString(), t.UInt64),
-              arg(expiryBlock.toString(), t.UInt64),
-              arg(GAS_ESCROW_AMOUNT.toFixed(8), t.UFix64),
-            ],
-            limit: 1000,
-          });
-          setTxResult({ success: true, txId });
-        }
+        const txId = await fcl.mutate({
+          cadence: CREATE_YIELD_INTENT_V04_TX,
+          args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
+            arg(amountFloat.toFixed(8), t.UFix64),
+            arg(targetAPY.toFixed(8), t.UFix64),
+            arg(deliverySideValue.toString(), t.UInt8),
+            arg(deliveryAddr, t.Optional(t.String)),
+            arg(duration.toString(), t.UInt64),
+            arg(expiryBlock.toString(), t.UInt64),
+            arg(escrowAmount.toFixed(8), t.UFix64),
+          ],
+          limit: 1000,
+        });
+        setTxResult({ success: true, txId });
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Transaction failed";
@@ -190,34 +150,6 @@ export function CreateIntentForm() {
             Connect →
           </button>
         )}
-      </div>
-
-      {/* Protocol Version Toggle */}
-      <div>
-        <label
-          className="block text-[10px] text-[#666660] mb-3 uppercase tracking-widest"
-          style={{ fontFamily: "'Space Mono', monospace" }}
-        >
-          Protocol Version
-        </label>
-        <div className="flex gap-0 border border-[#1a1a1a]">
-          {(["V0_4", "V0_3"] as const).map((ver) => (
-            <button
-              key={ver}
-              type="button"
-              onClick={() => setProtocolVersion(ver)}
-              className={cn(
-                "flex-1 py-2 px-4 text-xs font-medium transition-all duration-150",
-                protocolVersion === ver
-                  ? "bg-[#0047FF]/10 text-[#0047FF] border-b-2 border-[#0047FF]"
-                  : "text-[#666660] hover:text-[#F5F5F0] bg-transparent"
-              )}
-              style={{ fontFamily: "'Space Mono', monospace" }}
-            >
-              {ver === "V0_4" ? "V0.4 (User Executes)" : "V0.3 (Legacy)"}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Intent Type Toggle */}
@@ -300,30 +232,12 @@ export function CreateIntentForm() {
             transition={{ duration: 0.15 }}
             className="space-y-4"
           >
-            <div className="flex items-end justify-between gap-4">
-              <TokenSelector
-                value={outputToken}
-                onChange={(t) => setOutputToken(t as TokenKey)}
-                exclude={["FLOW"]}
-                label="Output Token"
-              />
-              <div className="flex-1">
-                <label
-                  className="block text-[10px] text-[#666660] mb-2 uppercase tracking-widest"
-                  style={{ fontFamily: "'Space Mono', monospace" }}
-                >
-                  Min Amount Out
-                </label>
-                <div
-                  className="px-4 py-3 border border-[#1a1a1a] text-[#666660] text-xs"
-                  style={{ fontFamily: "'Space Mono', monospace" }}
-                >
-                  {amount
-                    ? `~${(parseFloat(amount || "0") * 0.95).toFixed(4)} ${outputToken}`
-                    : "Auto (5% slippage)"}
-                </div>
-              </div>
-            </div>
+            <TokenSelector
+              value={outputToken}
+              onChange={(t) => setOutputToken(t as TokenKey)}
+              exclude={["FLOW"]}
+              label="Output Token"
+            />
           </motion.div>
         ) : (
           <motion.div
@@ -396,9 +310,8 @@ export function CreateIntentForm() {
         </div>
       </div>
 
-      {/* V0_4: Delivery Side Selector */}
-      {isV04 && (
-        <div>
+      {/* Delivery Side Selector */}
+      <div>
           <label
             className="block text-[10px] text-[#666660] mb-3 uppercase tracking-widest"
             style={{ fontFamily: "'Space Mono', monospace" }}
@@ -429,10 +342,9 @@ export function CreateIntentForm() {
             ))}
           </div>
         </div>
-      )}
 
-      {/* V0_4: Delivery Address (for external destinations) */}
-      {isV04 && needsDeliveryAddress && (
+      {/* Delivery Address (for external destinations) */}
+      {needsDeliveryAddress && (
         <div>
           <label
             className="block text-[10px] text-[#666660] mb-2 uppercase tracking-widest"
@@ -451,27 +363,35 @@ export function CreateIntentForm() {
         </div>
       )}
 
-      {/* Escrow Info */}
-      <div className="flex items-start gap-3 p-4 border border-[#1a1a1a]">
-        <Info className="w-3.5 h-3.5 text-[#666660] mt-0.5 shrink-0" />
-        <div
-          className="text-xs text-[#666660]"
+      {/* Commission Escrow */}
+      <div>
+        <label
+          className="block text-[10px] text-[#666660] mb-2 uppercase tracking-widest"
           style={{ fontFamily: "'Space Mono', monospace" }}
         >
-          {isV04 ? (
-            <>
-              Commission escrow:{" "}
-              <span className="text-[#F5F5F0]">{COMMISSION_ESCROW_AMOUNT} FLOW</span>
-              {" "}locked for solver payment. Principal stays in your wallet until you execute.
-            </>
-          ) : (
-            <>
-              Gas escrow:{" "}
-              <span className="text-[#F5F5F0]">{GAS_ESCROW_AMOUNT} FLOW</span>
-              {" "}locked alongside principal, paid to winning solver on execution.
-            </>
-          )}
+          Solver Commission (FLOW)
+        </label>
+        <div className="relative flex items-stretch border border-[#1a1a1a] hover:border-[#0047FF]/40 focus-within:border-[#0047FF]/50 transition-colors">
+          <div
+            className="flex items-center gap-2 px-3 border-r border-[#1a1a1a] shrink-0"
+            style={{ background: "#0D0D0D" }}
+          >
+            <span className="text-xs text-[#666660]" style={{ fontFamily: "'Space Mono', monospace" }}>FLOW</span>
+          </div>
+          <input
+            type="number"
+            value={commission}
+            onChange={(e) => setCommission(e.target.value)}
+            placeholder="0.01"
+            min="0.001"
+            step="0.001"
+            required
+            className="flex-1 px-4 py-3 bg-transparent text-[#F5F5F0] text-sm font-mono placeholder:text-[#666660] outline-none"
+          />
         </div>
+        <p className="text-[10px] text-[#666660] mt-1" style={{ fontFamily: "'Space Mono', monospace" }}>
+          Higher commission attracts more solvers. Locked until execution or cancel.
+        </p>
       </div>
 
       {/* Total cost */}
@@ -479,28 +399,25 @@ export function CreateIntentForm() {
         <div className="border border-[#1a1a1a] divide-y divide-[#1a1a1a]">
           <div className="flex justify-between px-4 py-3 text-xs">
             <span className="text-[#666660]" style={{ fontFamily: "'Space Mono', monospace" }}>
-              Principal {isV04 ? "(declared)" : ""}
+              Principal (declared)
             </span>
             <span className="text-[#F5F5F0]" style={{ fontFamily: "'Space Mono', monospace" }}>
               {parseFloat(amount).toFixed(4)} FLOW
-              {isV04 && <span className="text-[#666660] ml-1">(stays in wallet)</span>}
+              <span className="text-[#666660] ml-1">(stays in wallet)</span>
             </span>
           </div>
           <div className="flex justify-between px-4 py-3 text-xs">
             <span className="text-[#666660]" style={{ fontFamily: "'Space Mono', monospace" }}>
-              {isV04 ? "Commission Escrow" : "Gas Escrow"}
+              Commission Escrow
             </span>
             <span className="text-[#F5F5F0]" style={{ fontFamily: "'Space Mono', monospace" }}>{escrowAmount} FLOW</span>
           </div>
           <div className="flex justify-between px-4 py-3 text-xs">
             <span className="text-[#F5F5F0] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>
-              {isV04 ? "Locked Now" : "Total Required"}
+              Locked Now
             </span>
             <span className="text-[#0047FF] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>
-              {isV04
-                ? `${escrowAmount.toFixed(4)} FLOW`
-                : `${(parseFloat(amount) + GAS_ESCROW_AMOUNT).toFixed(4)} FLOW`
-              }
+              {escrowAmount.toFixed(4)} FLOW
             </span>
           </div>
         </div>

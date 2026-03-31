@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
+import * as fcl from "@onflow/fcl";
 import { Clock } from "lucide-react";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BidComparisonModal } from "./bid-comparison-modal";
 import { type MockIntent, formatAmount } from "@/lib/utils";
+import { EXECUTE_INTENT_V04_TX } from "@/lib/cadence";
 
 interface IntentCardProps {
   intent: MockIntent;
@@ -15,6 +17,28 @@ interface IntentCardProps {
 
 export function IntentCard({ intent, onSelectWinner }: IntentCardProps) {
   const [showBids, setShowBids] = useState(false);
+  const [executing, setExecuting] = useState(false);
+  const [execResult, setExecResult] = useState<{ success: boolean; txId?: string; error?: string } | null>(null);
+
+  const handleExecute = async () => {
+    setExecuting(true);
+    setExecResult(null);
+    try {
+      const txId = await fcl.mutate({
+        cadence: EXECUTE_INTENT_V04_TX,
+        args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
+          arg(intent.id.toString(), t.UInt64),
+        ],
+        limit: 9999,
+      });
+      await fcl.tx(txId).onceSealed();
+      setExecResult({ success: true, txId: txId as string });
+    } catch (err) {
+      setExecResult({ success: false, error: err instanceof Error ? err.message : "Execution failed" });
+    } finally {
+      setExecuting(false);
+    }
+  };
 
   const timeSince = (date: Date) => {
     const diff = Date.now() - date.getTime();
@@ -87,14 +111,26 @@ export function IntentCard({ intent, onSelectWinner }: IntentCardProps) {
             </div>
           )}
 
-          {intent.type === "SWAP" && (
+          {intent.type === "SWAP" && intent.outputToken && (
             <div className="flex items-center justify-between">
-              <span className="text-xs text-[#666660]">Min Out</span>
+              <span className="text-xs text-[#666660]">Output</span>
               <span
                 className="text-sm font-bold text-[#F5F5F0]"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
-                {formatAmount(intent.minAmountOut || 0)} {intent.outputToken}
+                → {intent.outputToken}
+              </span>
+            </div>
+          )}
+
+          {intent.winningOffer != null && intent.winningOffer > 0 && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-[#666660]">Solver Offers</span>
+              <span
+                className="text-sm font-bold text-[#00C566]"
+                style={{ fontFamily: "'Space Mono', monospace" }}
+              >
+                {formatAmount(intent.winningOffer)} {intent.outputToken ?? ""}
               </span>
             </div>
           )}
@@ -136,17 +172,35 @@ export function IntentCard({ intent, onSelectWinner }: IntentCardProps) {
           )}
 
           {intent.status === "BidSelected" && (
-            <div
-              className="flex items-center gap-2 px-3 py-2 border border-[#F5C542]/20 mb-3"
-              style={{ background: "rgba(245,197,66,0.04)" }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-[#F5C542] animate-pulse shrink-0" />
-              <span
-                className="text-[10px] text-[#F5C542]"
-                style={{ fontFamily: "'Space Mono', monospace" }}
+            <div className="space-y-2 mb-3">
+              <div
+                className="flex items-center gap-2 px-3 py-2 border border-[#F5C542]/20"
+                style={{ background: "rgba(245,197,66,0.04)" }}
               >
-                Winner selected · awaiting solver execution
-              </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#F5C542] animate-pulse shrink-0" />
+                <span
+                  className="text-[10px] text-[#F5C542]"
+                  style={{ fontFamily: "'Space Mono', monospace" }}
+                >
+                  Winner selected · ready to execute
+                </span>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                className="w-full font-mono tracking-wide text-xs"
+                onClick={handleExecute}
+                loading={executing}
+                disabled={executing}
+              >
+                {executing ? "EXECUTING..." : "EXECUTE SWAP →"}
+              </Button>
+              {execResult && (
+                <div className={`text-[10px] px-2 py-1 border ${execResult.success ? "border-[#00C566]/30 text-[#00C566]" : "border-red-800 text-red-400"}`}
+                  style={{ fontFamily: "'Space Mono', monospace" }}>
+                  {execResult.success ? `Executed! TX: ${execResult.txId?.slice(0, 16)}…` : execResult.error}
+                </div>
+              )}
             </div>
           )}
 
@@ -160,7 +214,7 @@ export function IntentCard({ intent, onSelectWinner }: IntentCardProps) {
                 className="text-[10px] text-[#00C566]"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
-                Executed by solver
+                Intent completed
               </span>
             </div>
           )}
