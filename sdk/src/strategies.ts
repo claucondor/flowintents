@@ -242,12 +242,23 @@ export function encodeWrapAndSwapStrategy(
  * @returns 0x-prefixed ABI-encoded StrategyStep[].
  */
 export function encodeANKRStakeStrategy(amountFlow: number, _recipient: string): string {
+  // Dummy call to cert token so ComposerV5 sweep detects the output
+  const dummyCallData = ('0x70a08231' +
+    encodeAbiParameters(parseAbiParameters('address'), ['0x0000000000000000000000000000000000000000' as `0x${string}`]).slice(2)
+  ) as `0x${string}`
+
   const steps: Step[] = [
     {
       protocol: PROTOCOL.ANKR_STAKE,
       target: TOKENS.ANKR_STAKING_POOL as `0x${string}`,
       callData: SEL.ANKR_STAKE_CERTS,
       value: flowToAtto(amountFlow),
+    },
+    {
+      protocol: PROTOCOL.CUSTOM,
+      target: TOKENS.ANKR_CERT_TOKEN as `0x${string}`,
+      callData: dummyCallData,
+      value: 0n,
     },
   ]
   return encodeSteps(steps)

@@ -123,17 +123,19 @@ export function configureFCL() {
     '0xIntentMarketplaceV0_3': DEPLOYER,
     '0xBidManagerV0_3': DEPLOYER,
     '0xIntentExecutorV0_3': DEPLOYER,
+    '0xIntentMarketplaceV0_4': DEPLOYER,
+    '0xBidManagerV0_4': DEPLOYER,
+    '0xIntentExecutorV0_4': DEPLOYER,
   })
 }
 
 // ── Private key signing ───────────────────────────────────────────────────────
 
-const ec = new EC('p256')
+const ec = new EC('secp256k1')
 
 function hashMsg(msg: string): Buffer {
-  const sha = new SHA3(256)
-  sha.update(Buffer.from(msg, 'hex'))
-  return Buffer.from(sha.digest())
+  const crypto = require('crypto')
+  return crypto.createHash('sha256').update(Buffer.from(msg, 'hex')).digest()
 }
 
 function signWithKey(privateKey: string, msg: string): string {
@@ -222,14 +224,14 @@ async function execScript(code: string, args: any[] = []): Promise<any> {
 // ── Chain reads ───────────────────────────────────────────────────────────────
 
 const OPEN_INTENTS_SCRIPT = `
-import IntentMarketplaceV0_3 from ${DEPLOYER}
+import IntentMarketplaceV0_4 from ${DEPLOYER}
 access(all) fun main(): [UInt64] {
-  return IntentMarketplaceV0_3.getOpenIntents()
+  return IntentMarketplaceV0_4.getOpenIntents()
 }
 `
 
 const GET_INTENT_SCRIPT = `
-import IntentMarketplaceV0_3 from ${DEPLOYER}
+import IntentMarketplaceV0_4 from ${DEPLOYER}
 
 access(all) struct IntentView {
   access(all) let id: UInt64
@@ -237,45 +239,35 @@ access(all) struct IntentView {
   access(all) let principalAmount: UFix64
   access(all) let intentType: UInt8
   access(all) let targetAPY: UFix64
-  access(all) let minAmountOut: UFix64?
-  access(all) let maxFeeBPS: UInt64?
+  access(all) let tokenOut: String
+  access(all) let deliverySide: UInt8
   access(all) let durationDays: UInt64
   access(all) let expiryBlock: UInt64
   access(all) let status: UInt8
   access(all) let winningBidID: UInt64?
   access(all) let createdAt: UFix64
-  access(all) let principalSide: UInt8
-  access(all) let gasEscrowBalance: UFix64
-  access(all) let executionDeadlineBlock: UInt64
-  access(all) let recipientEVMAddress: String?
 
   init(id: UInt64, intentOwner: Address, principalAmount: UFix64, intentType: UInt8,
-       targetAPY: UFix64, minAmountOut: UFix64?, maxFeeBPS: UInt64?,
+       targetAPY: UFix64, tokenOut: String, deliverySide: UInt8,
        durationDays: UInt64, expiryBlock: UInt64, status: UInt8,
-       winningBidID: UInt64?, createdAt: UFix64, principalSide: UInt8,
-       gasEscrowBalance: UFix64, executionDeadlineBlock: UInt64, recipientEVMAddress: String?) {
+       winningBidID: UInt64?, createdAt: UFix64) {
     self.id = id; self.intentOwner = intentOwner; self.principalAmount = principalAmount
-    self.intentType = intentType; self.targetAPY = targetAPY; self.minAmountOut = minAmountOut
-    self.maxFeeBPS = maxFeeBPS; self.durationDays = durationDays; self.expiryBlock = expiryBlock
-    self.status = status; self.winningBidID = winningBidID; self.createdAt = createdAt
-    self.principalSide = principalSide; self.gasEscrowBalance = gasEscrowBalance
-    self.executionDeadlineBlock = executionDeadlineBlock; self.recipientEVMAddress = recipientEVMAddress
+    self.intentType = intentType; self.targetAPY = targetAPY; self.tokenOut = tokenOut
+    self.deliverySide = deliverySide; self.durationDays = durationDays
+    self.expiryBlock = expiryBlock; self.status = status
+    self.winningBidID = winningBidID; self.createdAt = createdAt
   }
 }
 
 access(all) fun main(intentID: UInt64): IntentView? {
-  if let intent = IntentMarketplaceV0_3.getIntent(id: intentID) {
+  if let intent = IntentMarketplaceV0_4.getIntent(id: intentID) {
     return IntentView(
       id: intent.id, intentOwner: intent.intentOwner,
       principalAmount: intent.principalAmount, intentType: intent.intentType.rawValue,
-      targetAPY: intent.targetAPY, minAmountOut: intent.minAmountOut,
-      maxFeeBPS: intent.maxFeeBPS, durationDays: intent.durationDays,
+      targetAPY: intent.targetAPY, tokenOut: intent.tokenOut,
+      deliverySide: intent.deliverySide.rawValue, durationDays: intent.durationDays,
       expiryBlock: intent.expiryBlock, status: intent.status.rawValue,
-      winningBidID: intent.winningBidID, createdAt: intent.createdAt,
-      principalSide: intent.principalSide.rawValue,
-      gasEscrowBalance: intent.getGasEscrowBalance(),
-      executionDeadlineBlock: intent.executionDeadlineBlock,
-      recipientEVMAddress: intent.recipientEVMAddress
+      winningBidID: intent.winningBidID, createdAt: intent.createdAt
     )
   }
   return nil
@@ -283,16 +275,16 @@ access(all) fun main(intentID: UInt64): IntentView? {
 `
 
 const BIDS_BY_SOLVER_SCRIPT = `
-import BidManagerV0_3 from ${DEPLOYER}
+import BidManagerV0_4 from ${DEPLOYER}
 access(all) fun main(solver: Address): [UInt64] {
-  return BidManagerV0_3.getBidsBySolver(solver)
+  return BidManagerV0_4.getBidsBySolver(solver)
 }
 `
 
 const BIDS_FOR_INTENT_SCRIPT = `
-import BidManagerV0_3 from ${DEPLOYER}
+import BidManagerV0_4 from ${DEPLOYER}
 access(all) fun main(intentID: UInt64): [UInt64] {
-  return BidManagerV0_3.getBidsForIntent(intentID: intentID)
+  return BidManagerV0_4.getBidsForIntent(intentID: intentID)
 }
 `
 
@@ -313,16 +305,18 @@ export async function getIntent(id: number): Promise<Intent | null> {
     principalAmount: r.principalAmount ?? 0,
     intentType: INTENT_TYPE_MAP[r.intentType ?? 0] ?? 'Yield',
     targetAPY: r.targetAPY ?? 0,
-    minAmountOut: r.minAmountOut ?? undefined,
-    maxFeeBPS: r.maxFeeBPS ?? undefined,
+    minAmountOut: undefined,
+    maxFeeBPS: undefined,
     durationDays: r.durationDays ?? 0,
     expiryBlock: r.expiryBlock ?? 0,
     status: INTENT_STATUS_MAP[r.status ?? 0] ?? 'Open',
-    principalSide: r.principalSide === 1 ? 'evm' : 'cadence',
-    gasEscrowBalance: r.gasEscrowBalance ?? 0,
-    executionDeadlineBlock: r.executionDeadlineBlock ?? 0,
+    principalSide: 'cadence',
+    gasEscrowBalance: 0,
+    executionDeadlineBlock: 0,
     winningBidID: r.winningBidID ?? undefined,
-    recipientEVMAddress: r.recipientEVMAddress ?? undefined,
+    recipientEVMAddress: undefined,
+    tokenOut: r.tokenOut ?? '',
+    deliverySide: r.deliverySide ?? 0,
   }
 }
 
@@ -387,7 +381,7 @@ export async function getWinnerSelectedEvents(
   endBlock: number,
 ): Promise<WinnerSelectedEvent[]> {
   const raw = await queryEvents(
-    `A.${DEPLOYER.slice(2)}.BidManagerV0_3.WinnerSelected`,
+    `A.${DEPLOYER.slice(2)}.BidManagerV0_4.WinnerSelected`,
     startBlock,
     endBlock,
   )
@@ -412,14 +406,12 @@ export async function getWinnerSelectedEvents(
 // ── FCL Cadence transactions ──────────────────────────────────────────────────
 
 const SUBMIT_BID_CDC = `
-import BidManagerV0_3 from ${DEPLOYER}
+import BidManagerV0_4 from ${DEPLOYER}
 
 transaction(
   intentID: UInt64,
   offeredAPY: UFix64?,
   offeredAmountOut: UFix64?,
-  estimatedFeeBPS: UInt64?,
-  targetChain: String?,
   maxGasBid: UFix64,
   strategy: String,
   encodedBatch: [UInt8]
@@ -431,13 +423,11 @@ transaction(
   }
 
   execute {
-    let bidID = BidManagerV0_3.submitBid(
+    let bidID = BidManagerV0_4.submitBid(
       intentID: intentID,
       solverAddress: self.solverAddress,
       offeredAPY: offeredAPY,
       offeredAmountOut: offeredAmountOut,
-      estimatedFeeBPS: estimatedFeeBPS,
-      targetChain: targetChain,
       maxGasBid: maxGasBid,
       strategy: strategy,
       encodedBatch: encodedBatch
@@ -517,8 +507,6 @@ export async function submitBidTx(
       arg(params.intentID.toString(), _t.UInt64),
       arg(params.offeredAPY != null ? toUFix64(params.offeredAPY) : null, _t.Optional(_t.UFix64)),
       arg(params.offeredAmountOut != null ? toUFix64(params.offeredAmountOut) : null, _t.Optional(_t.UFix64)),
-      arg(null, _t.Optional(_t.UInt64)),   // estimatedFeeBPS
-      arg(null, _t.Optional(_t.String)),   // targetChain
       arg(toUFix64(params.maxGasBid), _t.UFix64),
       arg(params.strategy, _t.String),
       arg(encodedBatchBytes.map(String), _t.Array(_t.UInt8)),
@@ -639,8 +627,10 @@ export async function runSolverLoop(profile: SolverProfile) {
           log(color, name, `  Bidding on intent #${intentId} (${intent.intentType} — ${intent.principalAmount} FLOW)`)
 
           if (intent.intentType === 'Yield') {
-            const offeredAPY = Math.max(0.01, intent.targetAPY + profile.yieldAPYBonus)
-            const batch = buildYieldBatch(intent.principalAmount, evmAddress)
+            // Ankr staking: ~4.2% APY
+            const offeredAPY = 4.2
+            const batch = buildYieldBatch(intent.principalAmount, COMPOSER_V5)
+            log(color, name, `  Ankr stake: ${intent.principalAmount} FLOW → aFLOWEVMb (~${offeredAPY}% APY)`)
             const txId = await submitBidTx({
               intentID: intentId,
               offeredAPY,
@@ -649,7 +639,7 @@ export async function runSolverLoop(profile: SolverProfile) {
               encodedBatch: batch,
             }, address, privateKey)
             biddedIntents.add(intentId)
-            log('green', name, `  Bid submitted — tx: ${txId.slice(0, 16)}… offeredAPY: ${offeredAPY.toFixed(2)}%`)
+            log('green', name, `  Bid submitted — tx: ${txId.slice(0, 16)}… offeredAPY: ${offeredAPY}%`)
           } else if (intent.intentType === 'Swap') {
             // Query PunchSwap for real market price instead of trusting minAmountOut
             const quoteRaw = await getPunchSwapQuote(intent.principalAmount, TOKENS.stgUSDC)
@@ -695,15 +685,7 @@ export async function runSolverLoop(profile: SolverProfile) {
           const addrNorm = (s: string) => s.toLowerCase().replace('0x', '')
           if (addrNorm(w.solverAddress) !== addrNorm(address)) continue
 
-          log('yellow', name, `  WON intent #${w.intentID}! Bid #${w.winningBidID} — executing...`)
-          try {
-            const intent = await getIntent(w.intentID)
-            const recipient = intent?.recipientEVMAddress ?? null
-            const txId = await executeIntentTx(w.intentID, recipient, address, privateKey)
-            log('green', name, `  EXECUTED intent #${w.intentID} — tx: ${txId.slice(0, 16)}… Gas escrow claimed!`)
-          } catch (execErr) {
-            log('red', name, `  Execution failed for intent #${w.intentID}: ${execErr}`)
-          }
+          log('yellow', name, `  WON intent #${w.intentID}! Bid #${w.winningBidID} — user will execute`)
         }
       } catch (evtErr) {
         log('gray', name, `  Event poll failed (non-fatal): ${evtErr}`)
