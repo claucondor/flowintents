@@ -341,9 +341,10 @@ access(all) contract IntentExecutorV0_4 {
         }
 
         // ------------------------------------------------------------------
-        // Step 6: Update intent status to Active
+        // Step 6: Update intent status to Active then Completed
         // ------------------------------------------------------------------
         marketplace.setActiveOnIntent(id: intentID)
+        marketplace.completeIntent(id: intentID)
         marketplace.setExecutedByOnIntent(id: intentID, executorAddress: userAddress)
 
         // ------------------------------------------------------------------
