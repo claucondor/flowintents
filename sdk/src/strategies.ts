@@ -94,9 +94,10 @@ function encodeSteps(steps: Step[]): string {
  * 1 FLOW = 1e18 attoFLOW.
  */
 export function flowToAtto(flow: number): bigint {
-  // Use string conversion to avoid floating point precision loss
-  const [whole, dec = ''] = flow.toFixed(18).split('.')
-  const padded = dec.padEnd(18, '0').slice(0, 18)
+  // Use 8 decimal places (matches Cadence UFix64 precision) to avoid
+  // floating point rounding errors, then pad with 10 zeros for 18 decimals.
+  const [whole, dec = ''] = flow.toFixed(8).split('.')
+  const padded = dec.padEnd(8, '0').slice(0, 8) + '0000000000'
   return BigInt(whole + padded)
 }
 
@@ -187,6 +188,13 @@ export function encodeWrapAndSwapStrategy(
     ).slice(2)
   ) as `0x${string}`
 
+  // Step 4: Dummy call to outputToken so ComposerV5's sweep detects its balance.
+  // balanceOf(address(0)) is a harmless read — it just makes the token a "target"
+  // so the sweep loop finds and transfers the swapped tokens to the recipient.
+  const dummyCallData = ('0x70a08231' +
+    encodeAbiParameters(parseAbiParameters('address'), ['0x0000000000000000000000000000000000000000' as `0x${string}`]).slice(2)
+  ) as `0x${string}`
+
   const steps: Step[] = [
     {
       protocol: PROTOCOL.CUSTOM,
@@ -204,6 +212,12 @@ export function encodeWrapAndSwapStrategy(
       protocol: PROTOCOL.CUSTOM,
       target: router,
       callData: swapPacked,
+      value: 0n,
+    },
+    {
+      protocol: PROTOCOL.CUSTOM,
+      target: tokenOut,
+      callData: dummyCallData,
       value: 0n,
     },
   ]
