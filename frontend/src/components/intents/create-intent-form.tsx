@@ -343,6 +343,21 @@ export function CreateIntentForm() {
           </div>
         </div>
 
+      {/* Yield + CadenceVault warning */}
+      {intentType === "YIELD" && deliverySide === "CadenceVault" && (
+        <div
+          className="flex items-start gap-3 p-3 border border-[#F5C542]/20 text-[11px] text-[#F5C542]"
+          style={{ background: "rgba(245,197,66,0.04)", fontFamily: "'Space Mono', monospace" }}
+        >
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+          <span>
+            Yield share tokens (e.g. aFLOWEVMb) may not be bridgeable to Cadence.
+            If bridging fails, tokens will remain in your COA (EVM).
+            Consider selecting &quot;My COA&quot; for yield intents.
+          </span>
+        </div>
+      )}
+
       {/* Delivery Address (for external destinations) */}
       {needsDeliveryAddress && (
         <div>

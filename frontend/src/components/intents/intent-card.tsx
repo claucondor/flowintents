@@ -193,7 +193,7 @@ export function IntentCard({ intent, onSelectWinner }: IntentCardProps) {
                 loading={executing}
                 disabled={executing}
               >
-                {executing ? "EXECUTING..." : "EXECUTE SWAP →"}
+                {executing ? "EXECUTING..." : intent.type === "YIELD" ? "EXECUTE YIELD →" : "EXECUTE SWAP →"}
               </Button>
               {execResult && (
                 <div className={`text-[10px] px-2 py-1 border ${execResult.success ? "border-[#00C566]/30 text-[#00C566]" : "border-red-800 text-red-400"}`}

@@ -40,11 +40,14 @@ function fmtFlow(val: number | undefined | null): string {
 }
 
 function blocksAgo(eventBlock: number, currentBlock: number): string {
-  const diff = currentBlock - eventBlock;
-  if (diff <= 0) return "just now";
-  if (diff < 60) return `${diff}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  return `${Math.floor(diff / 3600)}h ago`;
+  if (!eventBlock || !currentBlock || isNaN(eventBlock) || isNaN(currentBlock)) return "";
+  const diffBlocks = currentBlock - eventBlock;
+  if (diffBlocks <= 0) return "just now";
+  // Flow blocks are ~1.2s each
+  const diffSecs = Math.floor(diffBlocks * 1.2);
+  if (diffSecs < 60) return `${diffSecs}s ago`;
+  if (diffSecs < 3600) return `${Math.floor(diffSecs / 60)}m ago`;
+  return `${(diffSecs / 3600).toFixed(1)}h ago`;
 }
 
 function describeEvent(evt: LiveEvent): { title: string; detail: string } {
@@ -53,8 +56,8 @@ function describeEvent(evt: LiveEvent): { title: string; detail: string } {
     case "IntentCreated":
       return {
         title: `Intent #${d.id ?? "?"} — ${fmtFlow(d.principalAmount)} FLOW`,
-        detail: d.targetAPY > 0
-          ? `${d.targetAPY?.toFixed(1)}% APY · ${d.durationDays}d · ${d.principalSide === 0 ? "Cadence" : "EVM"}`
+        detail: d.intentType === 0
+          ? `Yield · ${d.durationDays}d`
           : `Swap · ${d.durationDays}d`,
       };
     case "BidSubmitted":
@@ -119,7 +122,7 @@ export default function LivePage() {
       // On subsequent polls, only look at new blocks
       const lookback = lastPollBlock.current > 0
         ? Math.max(100, block - lastPollBlock.current + 10)
-        : 1000;
+        : 10000;
       lastPollBlock.current = block;
 
       const fresh = await getRecentEvents(lookback);
