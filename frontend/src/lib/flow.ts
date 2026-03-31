@@ -116,6 +116,10 @@ export interface Intent {
   principalSide: number; // 0=cadence, 1=evm
   gasEscrowBalance: number;
   executionDeadlineBlock: number;
+  // V0_4 fields
+  tokenOut?: string;
+  deliverySide?: number; // 0=CadenceVault, 1=COA, 2=ExternalEVM, 3=ExternalCadence
+  deliveryAddress?: string | null;
 }
 
 export interface Bid {
@@ -377,8 +381,131 @@ access(all) fun main(intentID: UInt64): BidData? {
 }
 `;
 
+// ── V0_4 Cadence scripts ─────────────────────────────────────────────────────
+
+const GET_TOTAL_INTENTS_V04_SCRIPT = `
+import IntentMarketplaceV0_4 from ${DEPLOYER}
+access(all) fun main(): UInt64 {
+  return IntentMarketplaceV0_4.totalIntents
+}
+`;
+
+const GET_OPEN_INTENTS_V04_SCRIPT = `
+import IntentMarketplaceV0_4 from ${DEPLOYER}
+access(all) fun main(): [UInt64] {
+  return IntentMarketplaceV0_4.getOpenIntents()
+}
+`;
+
+const GET_INTENT_FULL_V04_SCRIPT = `
+import IntentMarketplaceV0_4 from ${DEPLOYER}
+
+access(all) struct IntentData {
+  access(all) let id: UInt64
+  access(all) let intentOwner: Address
+  access(all) let principalAmount: UFix64
+  access(all) let intentType: UInt8
+  access(all) let tokenOut: String
+  access(all) let deliverySide: UInt8
+  access(all) let deliveryAddress: String?
+  access(all) let targetAPY: UFix64
+  access(all) let durationDays: UInt64
+  access(all) let expiryBlock: UInt64
+  access(all) let status: UInt8
+  access(all) let winningBidID: UInt64?
+  access(all) let createdAt: UFix64
+  access(all) let commissionEscrowBalance: UFix64
+
+  init(
+    id: UInt64, intentOwner: Address, principalAmount: UFix64,
+    intentType: UInt8, tokenOut: String, deliverySide: UInt8,
+    deliveryAddress: String?, targetAPY: UFix64,
+    durationDays: UInt64, expiryBlock: UInt64, status: UInt8,
+    winningBidID: UInt64?, createdAt: UFix64, commissionEscrowBalance: UFix64
+  ) {
+    self.id = id; self.intentOwner = intentOwner; self.principalAmount = principalAmount
+    self.intentType = intentType; self.tokenOut = tokenOut; self.deliverySide = deliverySide
+    self.deliveryAddress = deliveryAddress; self.targetAPY = targetAPY
+    self.durationDays = durationDays; self.expiryBlock = expiryBlock; self.status = status
+    self.winningBidID = winningBidID; self.createdAt = createdAt
+    self.commissionEscrowBalance = commissionEscrowBalance
+  }
+}
+
+access(all) fun main(intentID: UInt64): IntentData? {
+  if let intent = IntentMarketplaceV0_4.getIntent(id: intentID) {
+    return IntentData(
+      id: intent.id,
+      intentOwner: intent.intentOwner,
+      principalAmount: intent.principalAmount,
+      intentType: intent.intentType.rawValue,
+      tokenOut: intent.tokenOut,
+      deliverySide: intent.deliverySide.rawValue,
+      deliveryAddress: intent.deliveryAddress,
+      targetAPY: intent.targetAPY,
+      durationDays: intent.durationDays,
+      expiryBlock: intent.expiryBlock,
+      status: intent.status.rawValue,
+      winningBidID: intent.winningBidID,
+      createdAt: intent.createdAt,
+      commissionEscrowBalance: intent.commissionEscrow.balance
+    )
+  }
+  return nil
+}
+`;
+
+const GET_BIDS_FOR_INTENT_V04_SCRIPT = `
+import BidManagerV0_4 from ${DEPLOYER}
+access(all) fun main(intentID: UInt64): [UInt64] {
+  return BidManagerV0_4.getBidsForIntent(intentID: intentID)
+}
+`;
+
+const GET_BID_V04_SCRIPT = `
+import BidManagerV0_4 from ${DEPLOYER}
+
+access(all) struct BidData {
+  access(all) let id: UInt64
+  access(all) let intentID: UInt64
+  access(all) let solverAddress: Address
+  access(all) let solverEVMAddress: String
+  access(all) let offeredAPY: UFix64?
+  access(all) let offeredAmountOut: UFix64?
+  access(all) let maxGasBid: UFix64
+  access(all) let strategy: String
+  access(all) let submittedAt: UFix64
+  access(all) let score: UFix64
+
+  init(
+    id: UInt64, intentID: UInt64, solverAddress: Address,
+    solverEVMAddress: String, offeredAPY: UFix64?, offeredAmountOut: UFix64?,
+    maxGasBid: UFix64, strategy: String, submittedAt: UFix64, score: UFix64
+  ) {
+    self.id = id; self.intentID = intentID; self.solverAddress = solverAddress
+    self.solverEVMAddress = solverEVMAddress; self.offeredAPY = offeredAPY
+    self.offeredAmountOut = offeredAmountOut; self.maxGasBid = maxGasBid
+    self.strategy = strategy; self.submittedAt = submittedAt; self.score = score
+  }
+}
+
+access(all) fun main(bidID: UInt64): BidData? {
+  if let bid = BidManagerV0_4.getBid(bidID: bidID) {
+    return BidData(
+      id: bid.id, intentID: bid.intentID,
+      solverAddress: bid.solverAddress, solverEVMAddress: bid.solverEVMAddress,
+      offeredAPY: bid.offeredAPY, offeredAmountOut: bid.offeredAmountOut,
+      maxGasBid: bid.maxGasBid, strategy: bid.strategy,
+      submittedAt: bid.submittedAt, score: bid.score
+    )
+  }
+  return nil
+}
+`;
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
+// V0_3 reads (legacy)
 export async function getTotalIntents(): Promise<number> {
   return executeScript(GET_TOTAL_INTENTS_SCRIPT, []);
 }
@@ -409,6 +536,72 @@ export async function getIntent(id: number): Promise<Intent | null> {
     principalSide: result.principalSide ?? 0,
     gasEscrowBalance: result.gasEscrowBalance ?? 0,
     executionDeadlineBlock: result.executionDeadlineBlock ?? 0,
+  };
+}
+
+// V0_4 reads
+export async function getTotalIntentsV04(): Promise<number> {
+  return executeScript(GET_TOTAL_INTENTS_V04_SCRIPT, []);
+}
+
+export async function getOpenIntentIdsV04(): Promise<number[]> {
+  const result = await executeScript(GET_OPEN_INTENTS_V04_SCRIPT, []);
+  return Array.isArray(result) ? result : [];
+}
+
+export async function getIntentV04(id: number): Promise<Intent | null> {
+  const result = await executeScript(GET_INTENT_FULL_V04_SCRIPT, [
+    { type: "UInt64", value: id.toString() },
+  ]);
+  if (result === null || result === undefined) return null;
+  return {
+    id: result.id ?? id,
+    intentOwner: result.intentOwner ?? "",
+    principalAmount: result.principalAmount ?? 0,
+    intentType: result.intentType ?? 0,
+    targetAPY: result.targetAPY ?? 0,
+    minAmountOut: null,
+    maxFeeBPS: null,
+    durationDays: result.durationDays ?? 0,
+    expiryBlock: result.expiryBlock ?? 0,
+    status: result.status ?? 0,
+    winningBidID: result.winningBidID ?? null,
+    createdAt: result.createdAt ?? 0,
+    principalSide: 0,
+    gasEscrowBalance: result.commissionEscrowBalance ?? 0,
+    executionDeadlineBlock: 0,
+    // V0_4 fields
+    tokenOut: result.tokenOut ?? "",
+    deliverySide: result.deliverySide ?? 0,
+    deliveryAddress: result.deliveryAddress ?? null,
+  };
+}
+
+export async function getBidsForIntentV04(intentID: number): Promise<number[]> {
+  const result = await executeScript(GET_BIDS_FOR_INTENT_V04_SCRIPT, [
+    { type: "UInt64", value: intentID.toString() },
+  ]);
+  return Array.isArray(result) ? result : [];
+}
+
+export async function getBidV04(bidID: number): Promise<Bid | null> {
+  const result = await executeScript(GET_BID_V04_SCRIPT, [
+    { type: "UInt64", value: bidID.toString() },
+  ]);
+  if (result === null || result === undefined) return null;
+  return {
+    id: result.id ?? bidID,
+    intentID: result.intentID ?? 0,
+    solverAddress: result.solverAddress ?? "",
+    solverEVMAddress: result.solverEVMAddress ?? "",
+    offeredAPY: result.offeredAPY ?? null,
+    offeredAmountOut: result.offeredAmountOut ?? null,
+    estimatedFeeBPS: null,
+    targetChain: null,
+    maxGasBid: result.maxGasBid ?? 0,
+    strategy: result.strategy ?? "",
+    submittedAt: result.submittedAt ?? 0,
+    score: result.score ?? 0,
   };
 }
 
@@ -529,8 +722,8 @@ async function queryEvents(
 export async function getProtocolStats(): Promise<ProtocolStats> {
   try {
     const [totalIntents, openIds, currentHeight] = await Promise.all([
-      getTotalIntents(),
-      getOpenIntentIds(),
+      getTotalIntentsV04(),
+      getOpenIntentIdsV04(),
       getCurrentBlockHeight(),
     ]);
 
@@ -539,12 +732,12 @@ export async function getProtocolStats(): Promise<ProtocolStats> {
 
     const [createdEvents, executedEvents] = await Promise.all([
       queryEvents(
-        `A.c65395858a38d8ff.IntentMarketplaceV0_3.IntentCreated`,
+        `A.c65395858a38d8ff.IntentMarketplaceV0_4.IntentCreated`,
         startBlock,
         currentHeight
       ),
       queryEvents(
-        `A.c65395858a38d8ff.IntentExecutorV0_3.IntentExecuted`,
+        `A.c65395858a38d8ff.IntentExecutorV0_4.IntentExecuted`,
         startBlock,
         currentHeight
       ),
@@ -596,7 +789,6 @@ export async function getProtocolStats(): Promise<ProtocolStats> {
 
 export type LiveEventType =
   | "IntentCreated"
-  | "EVMIntentCreated"
   | "BidSubmitted"
   | "WinnerSelected"
   | "IntentCompleted"
@@ -612,12 +804,11 @@ export interface LiveEvent {
 }
 
 const LIVE_EVENT_SOURCES: { name: LiveEventType; contract: string }[] = [
-  { name: "IntentCreated",    contract: "IntentMarketplaceV0_3" },
-  { name: "EVMIntentCreated", contract: "IntentMarketplaceV0_3" },
-  { name: "BidSubmitted",     contract: "BidManagerV0_3" },
-  { name: "WinnerSelected",   contract: "BidManagerV0_3" },
-  { name: "IntentCompleted",  contract: "IntentMarketplaceV0_3" },
-  { name: "IntentCancelled",  contract: "IntentMarketplaceV0_3" },
+  { name: "IntentCreated",    contract: "IntentMarketplaceV0_4" },
+  { name: "BidSubmitted",     contract: "BidManagerV0_4" },
+  { name: "WinnerSelected",   contract: "BidManagerV0_4" },
+  { name: "IntentCompleted",  contract: "IntentMarketplaceV0_4" },
+  { name: "IntentCancelled",  contract: "IntentMarketplaceV0_4" },
 ];
 
 export async function getRecentEvents(lookbackBlocks = 1000): Promise<LiveEvent[]> {

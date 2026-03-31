@@ -13,7 +13,7 @@ export function shortenAddress(address: string, chars = 4): string {
   return `${address.slice(0, chars)}...${address.slice(-chars)}`;
 }
 
-export function formatAmount(amount: number, decimals = 2): string {
+export function formatAmount(amount: number, decimals = 6): string {
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
@@ -52,6 +52,7 @@ export interface MockIntent {
   durationDays: number;
   createdAt: Date;
   bids: MockBid[];
+  winningOffer?: number; // offeredAmountOut or offeredAPY from winning bid
 }
 
 export interface MockBid {

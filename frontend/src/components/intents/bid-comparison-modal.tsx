@@ -5,8 +5,8 @@ import * as fcl from "@onflow/fcl";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { type MockIntent, shortenAddress, formatAmount } from "@/lib/utils";
-import { getBidsForIntent, getBidsByIds, type Bid } from "@/lib/flow";
-import { SELECT_WINNER_TX } from "@/lib/cadence";
+import { getBidsForIntentV04, getBidV04, type Bid } from "@/lib/flow";
+import { SELECT_WINNER_V04_TX } from "@/lib/cadence";
 
 interface BidComparisonModalProps {
   open: boolean;
@@ -32,8 +32,8 @@ export function BidComparisonModal({
     if (!open) return;
     setLoading(true);
     setError(null);
-    getBidsForIntent(intent.id)
-      .then((ids) => getBidsByIds(ids))
+    getBidsForIntentV04(intent.id)
+      .then((ids) => Promise.all(ids.map((id) => getBidV04(id))).then((bids) => bids.filter(Boolean) as Bid[]))
       .then((b) => setBids(b.sort((a, z) => z.score - a.score)))
       .catch(() => setError("Failed to load bids"))
       .finally(() => setLoading(false));
@@ -46,7 +46,7 @@ export function BidComparisonModal({
     setError(null);
     try {
       const id = await fcl.mutate({
-        cadence: SELECT_WINNER_TX,
+        cadence: SELECT_WINNER_V04_TX,
         args: (arg: (v: string, t: unknown) => unknown, t: { UInt64: unknown }) => [
           arg(intent.id.toString(), t.UInt64),
         ],
@@ -242,7 +242,7 @@ export function BidComparisonModal({
                 className="text-center text-[10px] text-[#333330] mt-2"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
-                Contract auto-selects highest score · solver executes automatically
+                Contract auto-selects highest score · you execute the winning strategy
               </p>
             </div>
           )}

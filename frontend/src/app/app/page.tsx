@@ -6,8 +6,10 @@ import { CreateIntentForm } from "@/components/intents/create-intent-form";
 import { IntentCard } from "@/components/intents/intent-card";
 import { useWallet } from "@/lib/wallet-context";
 import {
-  getTotalIntents,
-  getIntent,
+  getTotalIntentsV04,
+  getIntentV04,
+  getBidsForIntentV04,
+  getBidV04,
   type Intent,
   intentTypeLabel,
   intentStatusLabel,
@@ -25,8 +27,10 @@ function toMockIntent(intent: Intent): MockIntent {
     amount: intent.principalAmount,
     status: intentStatusLabel(intent.status) as MockIntent["status"],
     targetAPY: intent.targetAPY > 0 ? intent.targetAPY : undefined,
-    minAmountOut: intent.minAmountOut ?? undefined,
-    outputToken: intent.intentType === 1 ? "stgUSDC" : undefined,
+    minAmountOut: undefined,
+    outputToken: intent.tokenOut === "0xF1815bd50389c46847f0Bda824eC8da914045D14" ? "stgUSDC"
+      : intent.tokenOut === "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e" ? "WFLOW"
+      : intent.intentType === 1 ? "stgUSDC" : undefined,
     durationDays: intent.durationDays,
     createdAt: new Date(intent.createdAt * 1000),
     bids: [],
@@ -47,18 +51,37 @@ export default function AppPage() {
     }
     setLoading(true);
     try {
-      const total = await getTotalIntents();
+      const total = await getTotalIntentsV04();
       if (total === 0) {
         setIntents([]);
         return;
       }
       // Fetch all intents, filter by owner
       const ids = Array.from({ length: total }, (_, i) => i);
-      const allIntents = await Promise.all(ids.map((id) => getIntent(id)));
+      const allIntents = await Promise.all(ids.map((id) => getIntentV04(id)));
       const mine = (allIntents.filter(Boolean) as Intent[]).filter(
         (i) => i.intentOwner === flowUser.addr
       );
-      setIntents(mine.map(toMockIntent));
+      // Load winning bid offers for BidSelected intents
+      const mockIntents = await Promise.all(mine.map(async (intent) => {
+        const mock = toMockIntent(intent);
+        if (intent.winningBidID != null) {
+          try {
+            const bid = await getBidV04(intent.winningBidID);
+            if (bid) {
+              mock.winningOffer = bid.offeredAmountOut ?? bid.offeredAPY ?? undefined;
+            }
+          } catch { /* ignore */ }
+        } else if (intent.status === 0) {
+          // Open — check if there are bids to show count
+          try {
+            const bidIds = await getBidsForIntentV04(intent.id);
+            mock.bids = bidIds.map((id) => ({ id, solverAddress: '', strategy: '', score: 0, gasBid: 0, createdAt: new Date() }));
+          } catch { /* ignore */ }
+        }
+        return mock;
+      }));
+      setIntents(mockIntents);
     } catch (err) {
       console.error("Failed to load my intents:", err);
     } finally {

@@ -18,7 +18,6 @@ const EVENT_META: Record<
   { label: string; color: string; dot: string; bg: string }
 > = {
   IntentCreated:   { label: "INTENT",   color: "#0047FF", dot: "#0047FF", bg: "rgba(0,71,255,0.07)" },
-  EVMIntentCreated:{ label: "EVM INTENT",color: "#5B8EFF", dot: "#5B8EFF", bg: "rgba(91,142,255,0.07)" },
   BidSubmitted:    { label: "BID",       color: "#F5F5F0", dot: "#666660", bg: "rgba(255,255,255,0.03)" },
   WinnerSelected:  { label: "WINNER",    color: "#F5C542", dot: "#F5C542", bg: "rgba(245,197,66,0.07)" },
   IntentCompleted: { label: "EXECUTED",  color: "#00C566", dot: "#00C566", bg: "rgba(0,197,102,0.07)" },
@@ -58,11 +57,6 @@ function describeEvent(evt: LiveEvent): { title: string; detail: string } {
           ? `${d.targetAPY?.toFixed(1)}% APY · ${d.durationDays}d · ${d.principalSide === 0 ? "Cadence" : "EVM"}`
           : `Swap · ${d.durationDays}d`,
       };
-    case "EVMIntentCreated":
-      return {
-        title: `EVM Intent #${d.id ?? "?"}`,
-        detail: `evmId: ${String(d.evmIntentId ?? "").slice(0, 8)}… · ${d.evmToken ?? ""}`,
-      };
     case "BidSubmitted":
       return {
         title: `Bid #${d.bidID ?? "?"} on Intent #${d.intentID ?? "?"}`,
@@ -93,8 +87,8 @@ function describeEvent(evt: LiveEvent): { title: string; detail: string } {
 type FilterType = "ALL" | "INTENTS" | "BIDS" | "EXECUTED";
 
 const FILTER_MAP: Record<FilterType, LiveEventType[]> = {
-  ALL:      ["IntentCreated","EVMIntentCreated","BidSubmitted","WinnerSelected","IntentCompleted","IntentCancelled"],
-  INTENTS:  ["IntentCreated","EVMIntentCreated","IntentCancelled"],
+  ALL:      ["IntentCreated","BidSubmitted","WinnerSelected","IntentCompleted","IntentCancelled"],
+  INTENTS:  ["IntentCreated","IntentCancelled"],
   BIDS:     ["BidSubmitted","WinnerSelected"],
   EXECUTED: ["IntentCompleted"],
 };
@@ -172,7 +166,7 @@ export default function LivePage() {
     bids: events.filter((e) => e.eventType === "BidSubmitted").length,
     winners: events.filter((e) => e.eventType === "WinnerSelected").length,
     executed: events.filter((e) => e.eventType === "IntentCompleted").length,
-    intents: events.filter((e) => e.eventType === "IntentCreated" || e.eventType === "EVMIntentCreated").length,
+    intents: events.filter((e) => e.eventType === "IntentCreated").length,
     volume: events
       .filter((e) => e.eventType === "IntentCreated")
       .reduce((s, e) => s + (e.data.principalAmount ?? 0), 0),
