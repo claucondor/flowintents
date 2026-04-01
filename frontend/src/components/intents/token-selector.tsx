@@ -83,8 +83,7 @@ export function TokenSelector({ value, onChange, exclude = [], label }: TokenSel
                     <div>
                       <div
                         className="text-xs font-medium"
-                        style={{ color: "var(--text-primary)" }}
-                        style={{ fontFamily: "'Space Mono', monospace" }}
+                        style={{ color: "var(--text-primary)", fontFamily: "'Space Mono', monospace" }}
                       >
                         {token.symbol}
                       </div>

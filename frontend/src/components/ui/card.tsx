@@ -11,9 +11,9 @@ interface CardProps {
 export function Card({ children, className, hover = false }: CardProps) {
   return (
     <div
+      style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}
       className={cn(
-        "rounded-none p-6 transition-all duration-200",
-        "bg-[#0D0D0D] border border-[#1a1a1a]",
+        "rounded-none p-6 transition-all duration-200 border",
         hover && "hover:border-[#0047FF]/30 cursor-pointer",
         className
       )}
@@ -43,6 +43,6 @@ export function CardTitle({
   className?: string;
 }) {
   return (
-    <h3 className={cn("text-[#F5F5F0] font-semibold text-lg", className)}>{children}</h3>
+    <h3 className={cn("font-semibold text-lg", className)} style={{ color: "var(--text-primary)" }}>{children}</h3>
   );
 }

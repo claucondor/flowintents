@@ -125,8 +125,7 @@ export function SubmitBidModal({
             </span>
             <span
               className="text-xs"
-              style={{ color: "var(--text-primary)" }}
-              style={{ fontFamily: "'Space Mono', monospace" }}
+              style={{ color: "var(--text-primary)", fontFamily: "'Space Mono', monospace" }}
             >
               {formatAmount(intent.amount)} FLOW
             </span>
@@ -157,8 +156,7 @@ export function SubmitBidModal({
               </span>
               <span
                 className="text-xs"
-                style={{ color: "var(--text-primary)" }}
-                style={{ fontFamily: "'Space Mono', monospace" }}
+                style={{ color: "var(--text-primary)", fontFamily: "'Space Mono', monospace" }}
               >
                 {formatAmount(intent.minAmountOut || 0)} {intent.outputToken}
               </span>
@@ -173,8 +171,7 @@ export function SubmitBidModal({
             </span>
             <span
               className="text-xs"
-              style={{ color: "var(--text-primary)" }}
-              style={{ fontFamily: "'Space Mono', monospace" }}
+              style={{ color: "var(--text-primary)", fontFamily: "'Space Mono', monospace" }}
             >
               {intent.durationDays}d
             </span>

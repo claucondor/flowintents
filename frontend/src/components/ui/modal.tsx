@@ -40,21 +40,23 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
               exit={{ opacity: 0, scale: 0.97, y: 12 }}
               transition={{ type: "spring", damping: 30, stiffness: 450 }}
               className={cn(
-                "bg-[#0D0D0D] border border-[#1a1a1a] w-full max-w-lg max-h-[90vh] overflow-y-auto",
+                "w-full max-w-lg max-h-[90vh] overflow-y-auto border",
                 className
               )}
+              style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-[#1a1a1a]">
+              <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "var(--border)" }}>
                 <h2
-                  className="text-[#F5F5F0] font-bold text-sm tracking-widest uppercase"
-                  style={{ fontFamily: "'Space Mono', monospace" }}
+                  className="font-bold text-sm tracking-widest uppercase"
+                  style={{ fontFamily: "'Space Mono', monospace", color: "var(--text-primary)" }}
                 >
                   {title}
                 </h2>
                 <button
                   onClick={onClose}
-                  className="text-[#666660] hover:text-[#F5F5F0] transition-colors p-1"
+                  className="transition-colors p-1"
+                  style={{ color: "var(--text-secondary)" }}
                 >
                   <X className="w-4 h-4" />
                 </button>
