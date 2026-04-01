@@ -26,7 +26,7 @@ const STRATEGIES = [
 ];
 
 const inputClass =
-  "w-full px-4 py-3 border border-[#1a1a1a] bg-transparent text-[#F5F5F0] text-xs placeholder:text-[#666660] focus:border-[#0047FF]/50 transition-all outline-none";
+  "w-full px-4 py-3 border border-[var(--border)] bg-transparent text-[var(--text-primary)] text-xs placeholder:text-[var(--text-muted)] focus:border-[#0047FF]/50 transition-all outline-none";
 
 export function SubmitBidModal({
   open,
@@ -94,37 +94,38 @@ export function SubmitBidModal({
   return (
     <Modal open={open} onClose={onClose} title={`Submit Bid · Intent #${intent.id}`}>
       {/* Intent summary */}
-      <div className="mb-6 border border-[#1a1a1a] divide-y divide-[#1a1a1a]">
+      <div className="mb-6 border border-[var(--border)] divide-y divide-[var(--border)]">
         <div
-          className="px-4 py-2 text-[10px] text-[#666660] uppercase tracking-widest"
+          className="px-4 py-2 text-[10px] text-[var(--text-muted)] uppercase tracking-widest"
           style={{ fontFamily: "'Space Mono', monospace" }}
         >
           Intent Details
         </div>
-        <div className="grid grid-cols-2 gap-0 divide-x divide-y divide-[#1a1a1a]">
+        <div className="grid grid-cols-2 gap-0 divide-x divide-y divide-[var(--border)]">
           <div className="px-4 py-3">
             <span
-              className="block text-[10px] text-[#666660] mb-0.5"
+              className="block text-[10px] text-[var(--text-muted)] mb-0.5"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               Type
             </span>
             <span
-              className="text-xs text-[#F5F5F0]"
-              style={{ fontFamily: "'Space Mono', monospace" }}
+              className="text-xs"
+              style={{ color: "var(--text-primary)", fontFamily: "'Space Mono', monospace" }}
             >
               {intent.type}
             </span>
           </div>
           <div className="px-4 py-3">
             <span
-              className="block text-[10px] text-[#666660] mb-0.5"
+              className="block text-[10px] text-[var(--text-muted)] mb-0.5"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               Amount
             </span>
             <span
-              className="text-xs text-[#F5F5F0]"
+              className="text-xs"
+              style={{ color: "var(--text-primary)" }}
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               {formatAmount(intent.amount)} FLOW
@@ -133,7 +134,7 @@ export function SubmitBidModal({
           {intent.type === "YIELD" && (
             <div className="px-4 py-3">
               <span
-                className="block text-[10px] text-[#666660] mb-0.5"
+                className="block text-[10px] text-[var(--text-muted)] mb-0.5"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 Target APY
@@ -149,13 +150,14 @@ export function SubmitBidModal({
           {intent.type === "SWAP" && (
             <div className="px-4 py-3">
               <span
-                className="block text-[10px] text-[#666660] mb-0.5"
+                className="block text-[10px] text-[var(--text-muted)] mb-0.5"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 Min Out
               </span>
               <span
-                className="text-xs text-[#F5F5F0]"
+                className="text-xs"
+                style={{ color: "var(--text-primary)" }}
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 {formatAmount(intent.minAmountOut || 0)} {intent.outputToken}
@@ -164,13 +166,14 @@ export function SubmitBidModal({
           )}
           <div className="px-4 py-3">
             <span
-              className="block text-[10px] text-[#666660] mb-0.5"
+              className="block text-[10px] text-[var(--text-muted)] mb-0.5"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               Duration
             </span>
             <span
-              className="text-xs text-[#F5F5F0]"
+              className="text-xs"
+              style={{ color: "var(--text-primary)" }}
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               {intent.durationDays}d
@@ -183,7 +186,7 @@ export function SubmitBidModal({
         {/* Offered value */}
         <div>
           <label
-            className="block text-[10px] text-[#666660] mb-2 uppercase tracking-widest"
+            className="block text-[10px] text-[var(--text-muted)] mb-2 uppercase tracking-widest"
             style={{ fontFamily: "'Space Mono', monospace" }}
           >
             {intent.type === "YIELD" ? "Offered APY (%)" : `Offered Amount Out (${intent.outputToken})`}
@@ -217,7 +220,7 @@ export function SubmitBidModal({
         {/* Strategy */}
         <div>
           <label
-            className="block text-[10px] text-[#666660] mb-2 uppercase tracking-widest"
+            className="block text-[10px] text-[var(--text-muted)] mb-2 uppercase tracking-widest"
             style={{ fontFamily: "'Space Mono', monospace" }}
           >
             Strategy
@@ -226,10 +229,10 @@ export function SubmitBidModal({
             value={strategy}
             onChange={(e) => setStrategy(e.target.value)}
             className={cn(inputClass, "cursor-pointer")}
-            style={{ fontFamily: "'Space Mono', monospace", background: "#0D0D0D" }}
+            style={{ fontFamily: "'Space Mono', monospace", background: "var(--bg-card)" }}
           >
             {STRATEGIES.map((s) => (
-              <option key={s.value} value={s.value} style={{ background: "#0D0D0D" }}>
+              <option key={s.value} value={s.value} style={{ background: "var(--bg-card)" }}>
                 {s.label}
               </option>
             ))}
@@ -250,22 +253,22 @@ export function SubmitBidModal({
         {/* Target chain */}
         <div>
           <label
-            className="block text-[10px] text-[#666660] mb-2 uppercase tracking-widest"
+            className="block text-[10px] text-[var(--text-muted)] mb-2 uppercase tracking-widest"
             style={{ fontFamily: "'Space Mono', monospace" }}
           >
             Execution Chain
           </label>
-          <div className="flex gap-0 border border-[#1a1a1a]">
+          <div className="flex gap-0 border border-[var(--border)]">
             {(["cadence", "evm"] as const).map((chain) => (
               <button
                 key={chain}
                 type="button"
                 onClick={() => setTargetChain(chain)}
                 className={cn(
-                  "flex-1 py-2.5 text-xs font-medium border-r last:border-r-0 border-[#1a1a1a] transition-all capitalize",
+                  "flex-1 py-2.5 text-xs font-medium border-r last:border-r-0 border-[var(--border)] transition-all capitalize",
                   targetChain === chain
                     ? "bg-[#0047FF]/10 text-[#0047FF]"
-                    : "text-[#666660] hover:text-[#F5F5F0]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 )}
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
@@ -278,7 +281,7 @@ export function SubmitBidModal({
         {/* Gas bid */}
         <div>
           <label
-            className="block text-[10px] text-[#666660] mb-2 uppercase tracking-widest"
+            className="block text-[10px] text-[var(--text-muted)] mb-2 uppercase tracking-widest"
             style={{ fontFamily: "'Space Mono', monospace" }}
           >
             Max Gas Bid (FLOW)
@@ -296,9 +299,9 @@ export function SubmitBidModal({
             style={{ fontFamily: "'Space Mono', monospace" }}
           />
           <div className="flex items-center gap-1.5 mt-1.5">
-            <Info className="w-3 h-3 text-[#666660]" />
+            <Info className="w-3 h-3 text-[var(--text-muted)]" />
             <p
-              className="text-[10px] text-[#666660]"
+              className="text-[10px] text-[var(--text-muted)]"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               Max suggested: 0.01 FLOW. Lower gas bid improves your score.
@@ -316,7 +319,7 @@ export function SubmitBidModal({
                 : "border-red-800 text-red-400"
             )}
             style={{
-              background: result.success ? "#00C56608" : "#ff000008",
+              background: result.success ? "var(--accent-dim)" : "#ff000008",
               fontFamily: "'Space Mono', monospace",
             }}
           >

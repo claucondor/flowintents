@@ -9,7 +9,7 @@ interface BadgeProps {
 export function StatusBadge({ status, className }: BadgeProps) {
   const dotColor: Record<IntentStatus, string> = {
     Open: "bg-[#0047FF] animate-pulse",
-    BidSelected: "bg-[#F5F5F0]",
+    BidSelected: "bg-[var(--text-primary)]",
     Active: "bg-[#00C566] animate-pulse",
     Completed: "bg-[#00C566]",
     Cancelled: "bg-red-500",
@@ -38,7 +38,7 @@ interface GenericBadgeProps {
 
 export function Badge({ children, variant = "default", className }: GenericBadgeProps) {
   const variants: Record<string, string> = {
-    default: "text-[#666660] bg-transparent border-[#1a1a1a]",
+    default: "text-[var(--text-muted)] bg-transparent border-[var(--border)]",
     blue: "text-[#0047FF] bg-[#0047FF]/10 border-[#0047FF]/30",
     green: "text-[#00C566] bg-[#00C566]/10 border-[#00C566]/30",
     yellow: "text-yellow-400 bg-yellow-400/10 border-yellow-400/30",

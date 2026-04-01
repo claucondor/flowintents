@@ -114,7 +114,7 @@ export default function AppPage() {
   ];
 
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-8" style={{ background: "#050509" }}>
+    <div className="min-h-screen py-12 px-4 sm:px-8" style={{ background: "var(--bg-base)" }}>
       <div className="max-w-7xl mx-auto">
         {/* Page header */}
         <motion.div
@@ -124,29 +124,29 @@ export default function AppPage() {
         >
           <div>
             <div
-              className="text-[10px] text-[#666660] uppercase tracking-widest mb-3"
+              className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-3"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               Intent Marketplace
             </div>
             <h1
-              className="text-3xl font-bold text-[#F5F5F0]"
+              className="text-3xl font-bold text-[var(--text-primary)]"
               style={{ letterSpacing: "-0.02em" }}
             >
               Create an Intent.
             </h1>
-            <p className="text-sm text-[#666660] mt-1">
+            <p className="text-sm text-[var(--text-muted)] mt-1">
               Lock your FLOW, set your goal — solvers compete to get you the best outcome.
             </p>
           </div>
           {isFlowConnected && flowUser.addr && (
             <div
-              className="flex items-center gap-2 px-4 py-2 border border-[#1a1a1a]"
-              style={{ background: "#0D0D0D" }}
+              className="flex items-center gap-2 px-4 py-2 border border-[var(--border)]"
+              style={{ background: "var(--bg-card)" }}
             >
               <span className="w-1.5 h-1.5 bg-[#00C566] rounded-full animate-pulse" />
               <span
-                className="text-[11px] text-[#9999A0]"
+                className="text-[11px] text-[var(--text-secondary)]"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 {flowUser.addr}
@@ -156,7 +156,7 @@ export default function AppPage() {
         </motion.div>
 
         {/* Tab navigation */}
-        <div className="flex gap-0 border-b border-[#1a1a1a] mb-8">
+        <div className="flex gap-0 border-b border-[var(--border)] mb-8">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -164,7 +164,7 @@ export default function AppPage() {
               className="relative px-6 py-3 text-xs font-medium transition-all duration-200"
               style={{
                 fontFamily: "'Space Mono', monospace",
-                color: activeTab === tab.id ? "#F5F5F0" : "#666660",
+                color: activeTab === tab.id ? "var(--text-primary)" : "var(--text-muted)",
                 borderBottom: activeTab === tab.id ? "2px solid #0047FF" : "2px solid transparent",
                 marginBottom: "-1px",
               }}
@@ -174,8 +174,8 @@ export default function AppPage() {
                 <span
                   className="ml-2 px-1.5 py-0.5 text-[9px] border"
                   style={{
-                    color: "#666660",
-                    borderColor: "#1a1a1a",
+                    color: "var(--text-muted)",
+                    borderColor: "var(--border)",
                     fontFamily: "'Space Mono', monospace",
                   }}
                 >
@@ -197,15 +197,15 @@ export default function AppPage() {
               className="grid lg:grid-cols-5 gap-6"
             >
               {/* Form */}
-              <div className="lg:col-span-3 border border-[#1a1a1a]" style={{ background: "#0D0D0D" }}>
-                <div className="px-6 pt-6 pb-4 border-b border-[#1a1a1a]">
+              <div className="lg:col-span-3 border border-[var(--border)]" style={{ background: "var(--bg-card)" }}>
+                <div className="px-6 pt-6 pb-4 border-b border-[var(--border)]">
                   <div
-                    className="text-[10px] text-[#666660] uppercase tracking-widest mb-1"
+                    className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-1"
                     style={{ fontFamily: "'Space Mono', monospace" }}
                   >
                     New Intent
                   </div>
-                  <h2 className="text-lg font-semibold text-[#F5F5F0]">Create Intent</h2>
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">Create Intent</h2>
                 </div>
                 <div className="p-6">
                   <CreateIntentForm />
@@ -215,9 +215,9 @@ export default function AppPage() {
               {/* Info panel */}
               <div className="lg:col-span-2 space-y-4">
                 {/* How it works */}
-                <div className="border border-[#1a1a1a] p-6" style={{ background: "#0D0D0D" }}>
+                <div className="border border-[var(--border)] p-6" style={{ background: "var(--bg-card)" }}>
                   <div
-                    className="text-[10px] text-[#666660] uppercase tracking-widest mb-4"
+                    className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4"
                     style={{ fontFamily: "'Space Mono', monospace" }}
                   >
                     How Intents Work
@@ -242,14 +242,14 @@ export default function AppPage() {
                     ].map((step) => (
                       <div key={step.n} className="flex gap-4">
                         <div
-                          className="text-[11px] text-[#1a1a1a] font-bold shrink-0 mt-0.5"
+                          className="text-[11px] text-[var(--border)] font-bold shrink-0 mt-0.5"
                           style={{ fontFamily: "'Space Mono', monospace" }}
                         >
                           {step.n}
                         </div>
                         <div>
-                          <div className="text-sm font-medium text-[#F5F5F0]">{step.title}</div>
-                          <div className="text-xs text-[#666660] mt-0.5 leading-relaxed">{step.desc}</div>
+                          <div className="text-sm font-medium text-[var(--text-primary)]">{step.title}</div>
+                          <div className="text-xs text-[var(--text-muted)] mt-0.5 leading-relaxed">{step.desc}</div>
                         </div>
                       </div>
                     ))}
@@ -257,9 +257,9 @@ export default function AppPage() {
                 </div>
 
                 {/* Token support */}
-                <div className="border border-[#1a1a1a] p-6" style={{ background: "#0D0D0D" }}>
+                <div className="border border-[var(--border)] p-6" style={{ background: "var(--bg-card)" }}>
                   <div
-                    className="text-[10px] text-[#666660] uppercase tracking-widest mb-4"
+                    className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4"
                     style={{ fontFamily: "'Space Mono', monospace" }}
                   >
                     Token Support
@@ -269,11 +269,11 @@ export default function AppPage() {
                       { symbol: "FLOW", desc: "Input token for all intents", color: "#0047FF" },
                       { symbol: "WFLOW", desc: "Wrapped FLOW on EVM", color: "#0047FF" },
                       { symbol: "stgUSDC", desc: "Stargate bridged USDC", color: "#00C566" },
-                      { symbol: "ankrFLOW", desc: "Ankr liquid staked FLOW", color: "#F5F5F0" },
+                      { symbol: "ankrFLOW", desc: "Ankr liquid staked FLOW", color: "var(--text-primary)" },
                     ].map((t) => (
                       <div
                         key={t.symbol}
-                        className="flex items-center justify-between py-2 border-b border-[#1a1a1a] last:border-0"
+                        className="flex items-center justify-between py-2 border-b border-[var(--border)] last:border-0"
                       >
                         <span
                           className="text-xs font-bold"
@@ -281,7 +281,7 @@ export default function AppPage() {
                         >
                           {t.symbol}
                         </span>
-                        <span className="text-xs text-[#666660]">{t.desc}</span>
+                        <span className="text-xs text-[var(--text-muted)]">{t.desc}</span>
                       </div>
                     ))}
                   </div>
@@ -298,45 +298,45 @@ export default function AppPage() {
             >
               {!isFlowConnected ? (
                 <div
-                  className="border border-[#1a1a1a] p-16 text-center"
-                  style={{ background: "#0D0D0D" }}
+                  className="border border-[var(--border)] p-16 text-center"
+                  style={{ background: "var(--bg-card)" }}
                 >
                   <div
-                    className="text-[10px] text-[#666660] uppercase tracking-widest mb-4"
+                    className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4"
                     style={{ fontFamily: "'Space Mono', monospace" }}
                   >
                     Wallet Required
                   </div>
-                  <h3 className="text-xl font-semibold text-[#F5F5F0] mb-2">Connect your wallet</h3>
-                  <p className="text-[#666660] mb-6 text-sm">Connect your Flow wallet to see your intents</p>
+                  <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">Connect your wallet</h3>
+                  <p className="text-[var(--text-muted)] mb-6 text-sm">Connect your Flow wallet to see your intents</p>
                 </div>
               ) : loading ? (
                 <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
                   {[0, 1, 2].map((i) => (
                     <div
                       key={i}
-                      className="border border-[#1a1a1a] p-6 animate-pulse"
-                      style={{ background: "#0D0D0D" }}
+                      className="border border-[var(--border)] p-6 animate-pulse"
+                      style={{ background: "var(--bg-card)" }}
                     >
-                      <div className="h-4 bg-[#1a1a1a] rounded mb-3 w-2/3" />
-                      <div className="h-6 bg-[#1a1a1a] rounded mb-2 w-1/2" />
-                      <div className="h-3 bg-[#1a1a1a] rounded w-3/4" />
+                      <div className="h-4 bg-[var(--border)] rounded mb-3 w-2/3" />
+                      <div className="h-6 bg-[var(--border)] rounded mb-2 w-1/2" />
+                      <div className="h-3 bg-[var(--border)] rounded w-3/4" />
                     </div>
                   ))}
                 </div>
               ) : intents.length === 0 ? (
                 <div
-                  className="border border-[#1a1a1a] p-16 text-center"
-                  style={{ background: "#0D0D0D" }}
+                  className="border border-[var(--border)] p-16 text-center"
+                  style={{ background: "var(--bg-card)" }}
                 >
                   <div
-                    className="text-[10px] text-[#666660] uppercase tracking-widest mb-4"
+                    className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4"
                     style={{ fontFamily: "'Space Mono', monospace" }}
                   >
                     No Intents
                   </div>
-                  <h3 className="text-xl font-semibold text-[#F5F5F0] mb-2">No intents yet</h3>
-                  <p className="text-[#666660] mb-6 text-sm">Create your first intent to get started</p>
+                  <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">No intents yet</h3>
+                  <p className="text-[var(--text-muted)] mb-6 text-sm">Create your first intent to get started</p>
                   <button
                     onClick={() => setActiveTab("create")}
                     className="text-[#0047FF] hover:text-[#0039CC] text-sm font-medium transition-colors font-mono"
@@ -347,14 +347,14 @@ export default function AppPage() {
               ) : (
                 <div>
                   {/* Summary stats */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 border border-[#1a1a1a] mb-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 border border-[var(--border)] mb-6">
                     {[
-                      { label: "Total", value: intents.length, color: "#F5F5F0" },
+                      { label: "Total", value: intents.length, color: "var(--text-primary)" },
                       { label: "Open", value: intents.filter((i) => i.status === "Open").length, color: "#0047FF" },
                       {
                         label: "Active",
                         value: intents.filter((i) => ["BidSelected", "Active"].includes(i.status)).length,
-                        color: "#F5F5F0",
+                        color: "var(--text-primary)",
                       },
                       {
                         label: "Completed",
@@ -364,8 +364,8 @@ export default function AppPage() {
                     ].map((stat, i) => (
                       <div
                         key={stat.label}
-                        className={`p-5 ${i < 3 ? "border-r border-[#1a1a1a]" : ""}`}
-                        style={{ background: "#0D0D0D" }}
+                        className={`p-5 ${i < 3 ? "border-r border-[var(--border)]" : ""}`}
+                        style={{ background: "var(--bg-card)" }}
                       >
                         <div
                           className="text-2xl font-bold mb-1"
@@ -373,7 +373,7 @@ export default function AppPage() {
                         >
                           {stat.value}
                         </div>
-                        <div className="text-xs text-[#666660]">{stat.label}</div>
+                        <div className="text-xs text-[var(--text-muted)]">{stat.label}</div>
                       </div>
                     ))}
                   </div>

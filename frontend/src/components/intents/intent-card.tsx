@@ -52,28 +52,28 @@ export function IntentCard({ intent, onSelectWinner }: IntentCardProps) {
   return (
     <>
       <div
-        className="border border-[#1a1a1a] hover:border-[#0047FF]/30 transition-all duration-200 overflow-hidden"
-        style={{ background: "#0D0D0D" }}
+        className="border border-[var(--border)] hover:border-[#0047FF]/30 transition-all duration-200 overflow-hidden"
+        style={{ background: "var(--bg-card)" }}
       >
         {/* Header */}
-        <div className="px-5 pt-5 pb-4 border-b border-[#1a1a1a]">
+        <div className="px-5 pt-5 pb-4 border-b border-[var(--border)]">
           <div className="flex items-start justify-between">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span
-                  className="text-xs text-[#666660]"
+                  className="text-xs text-[var(--text-muted)]"
                   style={{ fontFamily: "'Space Mono', monospace" }}
                 >
                   #{intent.id}
                 </span>
                 <span
-                  className="text-[10px] text-[#666660] border border-[#1a1a1a] px-1.5 py-0.5"
+                  className="text-[10px] text-[var(--text-muted)] border border-[var(--border)] px-1.5 py-0.5"
                   style={{ fontFamily: "'Space Mono', monospace" }}
                 >
                   {intent.type}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 text-[#666660]">
+              <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
                 <Clock className="w-3 h-3" />
                 <span
                   className="text-[10px]"
@@ -90,9 +90,9 @@ export function IntentCard({ intent, onSelectWinner }: IntentCardProps) {
         {/* Details */}
         <div className="px-5 py-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#666660]">Amount</span>
+            <span className="text-xs text-[var(--text-muted)]">Amount</span>
             <span
-              className="text-sm font-bold text-[#F5F5F0]"
+              className="text-sm font-bold text-[var(--text-primary)]"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               {formatAmount(intent.amount)} FLOW
@@ -101,9 +101,9 @@ export function IntentCard({ intent, onSelectWinner }: IntentCardProps) {
 
           {intent.type === "YIELD" && intent.targetAPY && (
             <div className="flex items-center justify-between">
-              <span className="text-xs text-[#666660]">Target APY</span>
+              <span className="text-xs text-[var(--text-muted)]">Target APY</span>
               <span
-                className="text-sm font-bold text-[#00C566]"
+                className="text-sm font-bold text-[var(--accent)]"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 {intent.targetAPY}%
@@ -113,9 +113,9 @@ export function IntentCard({ intent, onSelectWinner }: IntentCardProps) {
 
           {intent.type === "SWAP" && intent.outputToken && (
             <div className="flex items-center justify-between">
-              <span className="text-xs text-[#666660]">Output</span>
+              <span className="text-xs text-[var(--text-muted)]">Output</span>
               <span
-                className="text-sm font-bold text-[#F5F5F0]"
+                className="text-sm font-bold text-[var(--text-primary)]"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 → {intent.outputToken}
@@ -125,9 +125,9 @@ export function IntentCard({ intent, onSelectWinner }: IntentCardProps) {
 
           {intent.winningOffer != null && intent.winningOffer > 0 && (
             <div className="flex items-center justify-between">
-              <span className="text-xs text-[#666660]">Solver Offers</span>
+              <span className="text-xs text-[var(--text-muted)]">Solver Offers</span>
               <span
-                className="text-sm font-bold text-[#00C566]"
+                className="text-sm font-bold text-[var(--accent)]"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 {formatAmount(intent.winningOffer)} {intent.outputToken ?? ""}
@@ -136,9 +136,9 @@ export function IntentCard({ intent, onSelectWinner }: IntentCardProps) {
           )}
 
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[#666660]">Duration</span>
+            <span className="text-xs text-[var(--text-muted)]">Duration</span>
             <span
-              className="text-xs text-[#F5F5F0]"
+              className="text-xs text-[var(--text-primary)]"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               {intent.durationDays}d
@@ -152,11 +152,11 @@ export function IntentCard({ intent, onSelectWinner }: IntentCardProps) {
             <div className="mb-3">
               <button
                 onClick={() => setShowBids(true)}
-                className="w-full flex items-center justify-between px-3 py-2 border border-[#1a1a1a] hover:border-[#0047FF]/40 transition-colors"
-                style={{ background: "#080808" }}
+                className="w-full flex items-center justify-between px-3 py-2 border border-[var(--border)] hover:border-[#0047FF]/40 transition-colors"
+                style={{ background: "var(--bg-base)" }}
               >
                 <span
-                  className="text-[10px] text-[#666660]"
+                  className="text-[10px] text-[var(--text-muted)]"
                   style={{ fontFamily: "'Space Mono', monospace" }}
                 >
                   View Bids
@@ -196,7 +196,7 @@ export function IntentCard({ intent, onSelectWinner }: IntentCardProps) {
                 {executing ? "EXECUTING..." : intent.type === "YIELD" ? "EXECUTE YIELD →" : "EXECUTE SWAP →"}
               </Button>
               {execResult && (
-                <div className={`text-[10px] px-2 py-1 border ${execResult.success ? "border-[#00C566]/30 text-[#00C566]" : "border-red-800 text-red-400"}`}
+                <div className={`text-[10px] px-2 py-1 border ${execResult.success ? "border-[#00C566]/30 text-[var(--accent)]" : "border-red-800 text-red-400"}`}
                   style={{ fontFamily: "'Space Mono', monospace" }}>
                   {execResult.success ? `Executed! TX: ${execResult.txId?.slice(0, 16)}…` : execResult.error}
                 </div>
@@ -211,7 +211,7 @@ export function IntentCard({ intent, onSelectWinner }: IntentCardProps) {
             >
               <span className="w-1.5 h-1.5 rounded-full bg-[#00C566] shrink-0" />
               <span
-                className="text-[10px] text-[#00C566]"
+                className="text-[10px] text-[var(--accent)]"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 Intent completed

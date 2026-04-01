@@ -111,7 +111,7 @@ const sectionReveal = {
 
 export default function SolverDocsPage() {
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-8" style={{ background: "#050509" }}>
+    <div className="min-h-screen py-12 px-4 sm:px-8" style={{ background: "var(--bg-base)" }}>
       <div className="max-w-4xl mx-auto">
 
         {/* Header */}
@@ -121,18 +121,18 @@ export default function SolverDocsPage() {
           className="mb-14"
         >
           <div
-            className="text-[10px] text-[#666660] uppercase tracking-widest mb-4"
+            className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4"
             style={{ fontFamily: "'Space Mono', monospace" }}
           >
             Technical Documentation
           </div>
           <h1
-            className="text-4xl font-bold text-[#F5F5F0] mb-4"
+            className="text-4xl font-bold text-[var(--text-primary)] mb-4"
             style={{ letterSpacing: "-0.03em" }}
           >
             Build a Solver.
           </h1>
-          <p className="text-[#9999A0] text-base leading-relaxed max-w-2xl">
+          <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-2xl">
             Solvers are autonomous agents that monitor open intents, submit competitive bids,
             and execute the winning strategy on-chain. Every successful execution earns the
             solver the full gas escrow deposited by the user.
@@ -147,7 +147,7 @@ export default function SolverDocsPage() {
           >
             How it works
           </div>
-          <div className="border border-[#1a1a1a]" style={{ background: "#0D0D0D" }}>
+          <div className="border border-[var(--border)]" style={{ background: "var(--bg-card)" }}>
             {[
               { step: "01", title: "Listen for intents", desc: "Poll IntentMarketplaceV0_4.getOpenIntents() or subscribe to IntentCreated events. Each intent declares what the user wants (swap or yield) and how much FLOW." },
               { step: "02", title: "Submit a bid", desc: "Call BidManagerV0_4.submitBid() with your offered terms (APY or amountOut) and an ABI-encoded strategy batch. Solvers compete on price, strategy quality, and reputation." },
@@ -156,17 +156,17 @@ export default function SolverDocsPage() {
             ].map((item, i, arr) => (
               <div
                 key={item.step}
-                className={`p-6 flex gap-6 ${i < arr.length - 1 ? "border-b border-[#1a1a1a]" : ""}`}
+                className={`p-6 flex gap-6 ${i < arr.length - 1 ? "border-b border-[var(--border)]" : ""}`}
               >
                 <div
-                  className="text-3xl font-bold text-[#1a1a1a] shrink-0 w-12 text-right"
+                  className="text-3xl font-bold text-[var(--border)] shrink-0 w-12 text-right"
                   style={{ fontFamily: "'Space Mono', monospace" }}
                 >
                   {item.step}
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-[#F5F5F0] mb-1">{item.title}</div>
-                  <p className="text-sm text-[#9999A0] leading-relaxed">{item.desc}</p>
+                  <div className="text-sm font-semibold text-[var(--text-primary)] mb-1">{item.title}</div>
+                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{item.desc}</p>
                 </div>
               </div>
             ))}
@@ -181,20 +181,20 @@ export default function SolverDocsPage() {
           >
             Quick Start
           </div>
-          <div className="border border-[#1a1a1a]" style={{ background: "#0D0D0D" }}>
-            <div className="px-4 py-2 border-b border-[#1a1a1a] flex items-center gap-2">
+          <div className="border border-[var(--border)]" style={{ background: "var(--bg-card)" }}>
+            <div className="px-4 py-2 border-b border-[var(--border)] flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
               <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
               <span className="w-2.5 h-2.5 rounded-full bg-[#00C566]/50" />
               <span
-                className="ml-2 text-[10px] text-[#9999A0]"
+                className="ml-2 text-[10px] text-[var(--text-secondary)]"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 terminal
               </span>
             </div>
             <pre
-              className="p-5 text-[12px] leading-relaxed overflow-x-auto text-[#9999A0]"
+              className="p-5 text-[12px] leading-relaxed overflow-x-auto text-[var(--text-secondary)]"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >{`# Clone and install
 git clone https://github.com/your-repo/flowintents
@@ -211,8 +211,8 @@ npx ts-node solver-bot-a.ts
 bash run-demo.sh`}
             </pre>
           </div>
-          <p className="text-xs text-[#666660] mt-3" style={{ fontFamily: "'Space Mono', monospace" }}>
-            See <code className="text-[#9999A0]">sdk/solver-bot-a.ts</code> and <code className="text-[#9999A0]">sdk/solver-bot-b.ts</code> for full working examples.
+          <p className="text-xs text-[var(--text-muted)] mt-3" style={{ fontFamily: "'Space Mono', monospace" }}>
+            See <code className="text-[var(--text-secondary)]">sdk/solver-bot-a.ts</code> and <code className="text-[var(--text-secondary)]">sdk/solver-bot-b.ts</code> for full working examples.
           </p>
         </motion.section>
 
@@ -226,9 +226,9 @@ bash run-demo.sh`}
           </div>
           <div className="space-y-6">
             {STRATEGIES.map((s) => (
-              <div key={s.id} className="border border-[#1a1a1a]" style={{ background: "#0D0D0D" }}>
+              <div key={s.id} className="border border-[var(--border)]" style={{ background: "var(--bg-card)" }}>
                 {/* Strategy header */}
-                <div className="px-6 py-4 border-b border-[#1a1a1a] flex items-center gap-3">
+                <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
                   <span
                     className="px-2 py-0.5 text-[10px] font-bold border"
                     style={{
@@ -240,15 +240,15 @@ bash run-demo.sh`}
                   >
                     {s.label}
                   </span>
-                  <span className="text-sm font-semibold text-[#F5F5F0]">{s.title}</span>
+                  <span className="text-sm font-semibold text-[var(--text-primary)]">{s.title}</span>
                 </div>
-                <div className="px-6 py-4 border-b border-[#1a1a1a]">
-                  <p className="text-sm text-[#9999A0]">{s.desc}</p>
+                <div className="px-6 py-4 border-b border-[var(--border)]">
+                  <p className="text-sm text-[var(--text-secondary)]">{s.desc}</p>
                 </div>
                 {/* Code */}
-                <div className="px-4 py-2 border-b border-[#1a1a1a]">
+                <div className="px-4 py-2 border-b border-[var(--border)]">
                   <span
-                    className="text-[10px] text-[#444440]"
+                    className="text-[10px] text-[var(--text-muted)]"
                     style={{ fontFamily: "'Space Mono', monospace" }}
                   >
                     example
@@ -256,7 +256,7 @@ bash run-demo.sh`}
                 </div>
                 <pre
                   className="p-5 text-[11px] leading-relaxed overflow-x-auto"
-                  style={{ fontFamily: "'Space Mono', monospace", color: "#9999A0" }}
+                  style={{ fontFamily: "'Space Mono', monospace", color: "var(--text-secondary)" }}
                 >
                   <code>{s.snippet}</code>
                 </pre>
@@ -273,20 +273,20 @@ bash run-demo.sh`}
           >
             Events to listen to
           </div>
-          <div className="border border-[#1a1a1a] overflow-hidden" style={{ background: "#0D0D0D" }}>
+          <div className="border border-[var(--border)] overflow-hidden" style={{ background: "var(--bg-card)" }}>
             {EVENTS.map((evt, i) => (
-              <div key={evt.name} className={`p-5 ${i < EVENTS.length - 1 ? "border-b border-[#1a1a1a]" : ""}`}>
+              <div key={evt.name} className={`p-5 ${i < EVENTS.length - 1 ? "border-b border-[var(--border)]" : ""}`}>
                 <div
-                  className="text-xs text-[#F5F5F0] font-bold mb-1.5"
+                  className="text-xs text-[var(--text-primary)] font-bold mb-1.5"
                   style={{ fontFamily: "'Space Mono', monospace" }}
                 >
                   A.c65395858a38d8ff.{evt.name}
                 </div>
-                <p className="text-sm text-[#9999A0]">{evt.desc}</p>
+                <p className="text-sm text-[var(--text-secondary)]">{evt.desc}</p>
               </div>
             ))}
           </div>
-          <p className="text-xs text-[#444440] mt-3" style={{ fontFamily: "'Space Mono', monospace" }}>
+          <p className="text-xs text-[var(--text-muted)] mt-3" style={{ fontFamily: "'Space Mono', monospace" }}>
             Poll via REST: GET /v1/events?type=A.c65395858a38d8ff.BidManagerV0_3.WinnerSelected&start_height=N&end_height=M
           </p>
         </motion.section>
@@ -299,23 +299,23 @@ bash run-demo.sh`}
           >
             Contract Addresses — Flow Mainnet
           </div>
-          <div className="border border-[#1a1a1a] overflow-hidden" style={{ background: "#0D0D0D" }}>
+          <div className="border border-[var(--border)] overflow-hidden" style={{ background: "var(--bg-card)" }}>
             {CONTRACTS.map((c, i) => (
               <div
                 key={c.name}
-                className={`px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 ${i < CONTRACTS.length - 1 ? "border-b border-[#1a1a1a]" : ""}`}
+                className={`px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 ${i < CONTRACTS.length - 1 ? "border-b border-[var(--border)]" : ""}`}
               >
                 <div>
                   <div
-                    className="text-xs font-bold text-[#F5F5F0] mb-0.5"
+                    className="text-xs font-bold text-[var(--text-primary)] mb-0.5"
                     style={{ fontFamily: "'Space Mono', monospace" }}
                   >
                     {c.name}
                   </div>
-                  <div className="text-[11px] text-[#666660]">{c.note}</div>
+                  <div className="text-[11px] text-[var(--text-muted)]">{c.note}</div>
                 </div>
                 <div
-                  className="text-[11px] text-[#9999A0] font-mono"
+                  className="text-[11px] text-[var(--text-secondary)] font-mono"
                   style={{ fontFamily: "'Space Mono', monospace" }}
                 >
                   {c.address}
@@ -334,10 +334,10 @@ bash run-demo.sh`}
             >
               Ready to compete?
             </div>
-            <h2 className="text-2xl font-bold text-[#F5F5F0] mb-3">
+            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-3">
               Start building your solver today.
             </h2>
-            <p className="text-[#9999A0] text-sm mb-6 max-w-lg">
+            <p className="text-[var(--text-secondary)] text-sm mb-6 max-w-lg">
               The FlowIntents SDK gives you everything you need: FCL signing, strategy encoders,
               and working bot examples. Fork it and make it better.
             </p>
@@ -352,7 +352,7 @@ bash run-demo.sh`}
               </Link>
               <Link href="/app">
                 <button
-                  className="px-6 py-2.5 text-sm font-medium text-[#F5F5F0] border border-[#1a1a1a] hover:border-[#0047FF]/40 transition-all"
+                  className="px-6 py-2.5 text-sm font-medium text-[var(--text-primary)] border border-[var(--border)] hover:border-[#0047FF]/40 transition-all"
                   style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                 >
                   Create Test Intent

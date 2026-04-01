@@ -28,7 +28,7 @@ export function TokenSelector({ value, onChange, exclude = [], label }: TokenSel
     <div className="relative">
       {label && (
         <label
-          className="block text-[10px] text-[#666660] mb-2 uppercase tracking-widest"
+          className="block text-[10px] text-[var(--text-muted)] mb-2 uppercase tracking-widest"
           style={{ fontFamily: "'Space Mono', monospace" }}
         >
           {label}
@@ -37,14 +37,15 @@ export function TokenSelector({ value, onChange, exclude = [], label }: TokenSel
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-3 py-3 border border-[#1a1a1a] hover:border-[#0047FF]/40 transition-all duration-150 min-w-[130px]"
-        style={{ background: "#0D0D0D", fontFamily: "'Space Mono', monospace" }}
+        className="flex items-center gap-2 px-3 py-3 border border-[var(--border)] hover:border-[#0047FF]/40 transition-all duration-150 min-w-[130px]"
+        style={{ background: "var(--bg-card)", fontFamily: "'Space Mono', monospace" }}
       >
         <span className="text-base">{selected.emoji}</span>
-        <span className="text-sm text-[#F5F5F0]">{selected.symbol}</span>
+        <span className="text-sm" style={{ color: "var(--text-primary)" }}>{selected.symbol}</span>
         <ChevronDown
           className={cn(
-            "w-3.5 h-3.5 text-[#666660] ml-auto transition-transform",
+            "w-3.5 h-3.5 ml-auto transition-transform",
+            "text-[var(--text-muted)]",
             open && "rotate-180"
           )}
         />
@@ -59,8 +60,8 @@ export function TokenSelector({ value, onChange, exclude = [], label }: TokenSel
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 4 }}
               transition={{ duration: 0.12 }}
-              className="absolute left-0 top-full mt-1 w-48 border border-[#1a1a1a] z-50 overflow-hidden"
-              style={{ background: "#0D0D0D" }}
+              className="absolute left-0 top-full mt-1 w-48 border border-[var(--border)] z-50 overflow-hidden"
+              style={{ background: "var(--bg-card)" }}
             >
               {availableTokens.map((tokenKey) => {
                 const token = TOKENS[tokenKey];
@@ -74,19 +75,20 @@ export function TokenSelector({ value, onChange, exclude = [], label }: TokenSel
                       setOpen(false);
                     }}
                     className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 hover:bg-[#0047FF]/5 transition-colors text-left border-b border-[#1a1a1a] last:border-b-0",
+                      "w-full flex items-center gap-3 px-4 py-3 hover:bg-[#0047FF]/5 transition-colors text-left border-b border-[var(--border)] last:border-b-0",
                       isSelected && "bg-[#0047FF]/5"
                     )}
                   >
                     <span className="text-base">{token.emoji}</span>
                     <div>
                       <div
-                        className="text-xs font-medium text-[#F5F5F0]"
+                        className="text-xs font-medium"
+                        style={{ color: "var(--text-primary)" }}
                         style={{ fontFamily: "'Space Mono', monospace" }}
                       >
                         {token.symbol}
                       </div>
-                      <div className="text-[10px] text-[#666660]">{token.name}</div>
+                      <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>{token.name}</div>
                     </div>
                     {isSelected && <Check className="w-3.5 h-3.5 text-[#0047FF] ml-auto" />}
                   </button>

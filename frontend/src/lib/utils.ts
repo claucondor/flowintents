@@ -35,7 +35,7 @@ export type IntentStatus = "Open" | "BidSelected" | "Active" | "Completed" | "Ca
 
 export const STATUS_COLORS: Record<IntentStatus, string> = {
   Open: "text-[#0047FF] bg-[#0047FF]/10 border-[#0047FF]/30",
-  BidSelected: "text-[#F5F5F0] bg-[#F5F5F0]/5 border-[#1a1a1a]",
+  BidSelected: "text-[var(--text-primary)] bg-[var(--border)]/30 border-[var(--border)]",
   Active: "text-[#00C566] bg-[#00C566]/10 border-[#00C566]/30",
   Completed: "text-[#00C566] bg-[#00C566]/5 border-[#00C566]/20",
   Cancelled: "text-red-400 bg-red-400/10 border-red-400/30",

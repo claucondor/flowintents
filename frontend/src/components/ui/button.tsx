@@ -22,11 +22,11 @@ export function Button({
     primary:
       "bg-[#0047FF] text-white hover:bg-[#0039CC] active:bg-[#002FA6]",
     secondary:
-      "border border-[#1a1a1a] text-[#F5F5F0] hover:border-[#0047FF] hover:text-[#0047FF] bg-transparent",
+      "border border-[var(--border)] text-[var(--text-primary)] hover:border-[#0047FF] hover:text-[#0047FF] bg-transparent",
     outline:
-      "border border-[#1a1a1a] text-[#F5F5F0] hover:border-[#0047FF] hover:text-[#0047FF] bg-transparent",
+      "border border-[var(--border)] text-[var(--text-primary)] hover:border-[#0047FF] hover:text-[#0047FF] bg-transparent",
     ghost:
-      "text-[#666660] hover:text-[#F5F5F0] bg-transparent",
+      "text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-transparent",
     danger:
       "border border-red-800 text-red-400 hover:bg-red-950 hover:border-red-600 bg-transparent",
   };

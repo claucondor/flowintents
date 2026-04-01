@@ -28,7 +28,7 @@ type DurationKey = 7 | 30 | 90;
 const BLOCKS_PER_DAY = 7200;
 
 const inputClass =
-  "w-full px-4 py-3 border border-[#1a1a1a] text-[#F5F5F0] text-sm placeholder:text-[#666660] focus:border-[#0047FF]/50 transition-all outline-none font-mono";
+  "w-full px-4 py-3 border border-[var(--border)] text-[var(--text-primary)] text-sm placeholder:text-[var(--text-muted)] focus:border-[#0047FF]/50 transition-all outline-none font-mono";
 
 export function CreateIntentForm() {
   const { isFlowConnected, connectFlow, flowUser } = useWallet();
@@ -119,16 +119,16 @@ export function CreateIntentForm() {
 
       {/* Active wallet indicator */}
       <div
-        className="flex items-center justify-between px-3 py-2 border border-[#1a1a1a]"
-        style={{ background: "#080808" }}
+        className="flex items-center justify-between px-3 py-2 border border-[var(--border)]"
+        style={{ background: "var(--bg-base)" }}
       >
         <div className="flex items-center gap-2">
           <span
             className="w-1.5 h-1.5 rounded-full shrink-0"
-            style={{ background: isFlowConnected ? "#00C566" : "#333330" }}
+            style={{ background: isFlowConnected ? "var(--accent)" : "var(--text-muted)" }}
           />
           <span
-            className="text-[10px] text-[#666660] uppercase tracking-widest"
+            className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest"
             style={{ fontFamily: "'Space Mono', monospace" }}
           >
             Cadence wallet
@@ -136,7 +136,7 @@ export function CreateIntentForm() {
         </div>
         {isFlowConnected && flowUser.addr ? (
           <span
-            className="text-[10px] text-[#F5F5F0]"
+            className="text-[10px] text-[var(--text-primary)]"
             style={{ fontFamily: "'Space Mono', monospace" }}
           >
             {flowUser.addr.slice(0, 6)}…{flowUser.addr.slice(-4)}
@@ -155,12 +155,12 @@ export function CreateIntentForm() {
       {/* Intent Type Toggle */}
       <div>
         <label
-          className="block text-[10px] text-[#666660] mb-3 uppercase tracking-widest"
+          className="block text-[10px] text-[var(--text-muted)] mb-3 uppercase tracking-widest"
           style={{ fontFamily: "'Space Mono', monospace" }}
         >
           Intent Type
         </label>
-        <div className="flex gap-0 border border-[#1a1a1a]">
+        <div className="flex gap-0 border border-[var(--border)]">
           {(["YIELD", "SWAP"] as const).map((type) => (
             <button
               key={type}
@@ -170,9 +170,9 @@ export function CreateIntentForm() {
                 "flex-1 py-2.5 px-4 text-xs font-medium transition-all duration-150",
                 intentType === type
                   ? type === "YIELD"
-                    ? "bg-[#00C566]/10 text-[#00C566] border-b-2 border-[#00C566]"
+                    ? "bg-[var(--accent-dim)] text-[var(--accent)] border-b-2 border-[var(--accent)]"
                     : "bg-[#0047FF]/10 text-[#0047FF] border-b-2 border-[#0047FF]"
-                  : "text-[#666660] hover:text-[#F5F5F0] bg-transparent"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-transparent"
               )}
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
@@ -185,18 +185,18 @@ export function CreateIntentForm() {
       {/* Amount Input */}
       <div>
         <label
-          className="block text-[10px] text-[#666660] mb-2 uppercase tracking-widest"
+          className="block text-[10px] text-[var(--text-muted)] mb-2 uppercase tracking-widest"
           style={{ fontFamily: "'Space Mono', monospace" }}
         >
           Amount
         </label>
-        <div className="relative flex items-stretch border border-[#1a1a1a] hover:border-[#0047FF]/40 focus-within:border-[#0047FF]/50 transition-colors">
+        <div className="relative flex items-stretch border border-[var(--border)] hover:border-[#0047FF]/40 focus-within:border-[#0047FF]/50 transition-colors">
           <div
-            className="flex items-center gap-2 px-3 border-r border-[#1a1a1a] shrink-0"
-            style={{ background: "#0D0D0D" }}
+            className="flex items-center gap-2 px-3 border-r border-[var(--border)] shrink-0"
+            style={{ background: "var(--bg-card)" }}
           >
             <span
-              className="text-xs text-[#666660]"
+              className="text-xs text-[var(--text-muted)]"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               FLOW
@@ -210,11 +210,11 @@ export function CreateIntentForm() {
             min="0"
             step="0.01"
             required
-            className="flex-1 px-4 py-3 bg-transparent text-[#F5F5F0] text-sm font-mono placeholder:text-[#666660] outline-none"
+            className="flex-1 px-4 py-3 bg-transparent text-[var(--text-primary)] text-sm font-mono placeholder:text-[var(--text-muted)] outline-none"
           />
           <button
             type="button"
-            className="px-3 text-[10px] text-[#0047FF] hover:text-[#0039CC] font-mono transition-colors border-l border-[#1a1a1a]"
+            className="px-3 text-[10px] text-[#0047FF] hover:text-[#0039CC] font-mono transition-colors border-l border-[var(--border)]"
           >
             MAX
           </button>
@@ -249,13 +249,13 @@ export function CreateIntentForm() {
           >
             <div className="flex items-center justify-between mb-2">
               <label
-                className="block text-[10px] text-[#666660] uppercase tracking-widest"
+                className="block text-[10px] text-[var(--text-muted)] uppercase tracking-widest"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 Target APY
               </label>
               <span
-                className="text-sm font-bold text-[#00C566]"
+                className="text-sm font-bold text-[var(--accent)]"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 {targetAPY}%
@@ -271,7 +271,7 @@ export function CreateIntentForm() {
               className="w-full cursor-pointer"
             />
             <div
-              className="flex justify-between text-[10px] text-[#666660] mt-1"
+              className="flex justify-between text-[10px] text-[var(--text-muted)] mt-1"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               <span>1%</span>
@@ -285,22 +285,22 @@ export function CreateIntentForm() {
       {/* Duration */}
       <div>
         <label
-          className="block text-[10px] text-[#666660] mb-3 uppercase tracking-widest"
+          className="block text-[10px] text-[var(--text-muted)] mb-3 uppercase tracking-widest"
           style={{ fontFamily: "'Space Mono', monospace" }}
         >
           Duration
         </label>
-        <div className="flex gap-0 border border-[#1a1a1a]">
+        <div className="flex gap-0 border border-[var(--border)]">
           {DURATION_OPTIONS.map((opt) => (
             <button
               key={opt.days}
               type="button"
               onClick={() => setDuration(opt.days as DurationKey)}
               className={cn(
-                "flex-1 py-2.5 text-xs font-medium border-r last:border-r-0 border-[#1a1a1a] transition-all",
+                "flex-1 py-2.5 text-xs font-medium border-r last:border-r-0 border-[var(--border)] transition-all",
                 duration === opt.days
                   ? "bg-[#0047FF]/10 text-[#0047FF]"
-                  : "text-[#666660] hover:text-[#F5F5F0] bg-transparent"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-transparent"
               )}
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
@@ -313,12 +313,12 @@ export function CreateIntentForm() {
       {/* Delivery Side Selector */}
       <div>
           <label
-            className="block text-[10px] text-[#666660] mb-3 uppercase tracking-widest"
+            className="block text-[10px] text-[var(--text-muted)] mb-3 uppercase tracking-widest"
             style={{ fontFamily: "'Space Mono', monospace" }}
           >
             Delivery Destination
           </label>
-          <div className="grid grid-cols-2 gap-0 border border-[#1a1a1a]">
+          <div className="grid grid-cols-2 gap-0 border border-[var(--border)]">
             {(Object.keys(DELIVERY_SIDE) as DeliverySideKey[]).map((key) => (
               <button
                 key={key}
@@ -330,10 +330,10 @@ export function CreateIntentForm() {
                   }
                 }}
                 className={cn(
-                  "py-2.5 px-3 text-[11px] font-medium border-r border-b border-[#1a1a1a] last:border-r-0 transition-all",
+                  "py-2.5 px-3 text-[11px] font-medium border-r border-b border-[var(--border)] last:border-r-0 transition-all",
                   deliverySide === key
                     ? "bg-[#0047FF]/10 text-[#0047FF]"
-                    : "text-[#666660] hover:text-[#F5F5F0] bg-transparent"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-transparent"
                 )}
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
@@ -362,7 +362,7 @@ export function CreateIntentForm() {
       {needsDeliveryAddress && (
         <div>
           <label
-            className="block text-[10px] text-[#666660] mb-2 uppercase tracking-widest"
+            className="block text-[10px] text-[var(--text-muted)] mb-2 uppercase tracking-widest"
             style={{ fontFamily: "'Space Mono', monospace" }}
           >
             {deliverySide === "ExternalEVM" ? "EVM Address" : "Cadence Address"}
@@ -381,17 +381,17 @@ export function CreateIntentForm() {
       {/* Commission Escrow */}
       <div>
         <label
-          className="block text-[10px] text-[#666660] mb-2 uppercase tracking-widest"
+          className="block text-[10px] text-[var(--text-muted)] mb-2 uppercase tracking-widest"
           style={{ fontFamily: "'Space Mono', monospace" }}
         >
           Solver Commission (FLOW)
         </label>
-        <div className="relative flex items-stretch border border-[#1a1a1a] hover:border-[#0047FF]/40 focus-within:border-[#0047FF]/50 transition-colors">
+        <div className="relative flex items-stretch border border-[var(--border)] hover:border-[#0047FF]/40 focus-within:border-[#0047FF]/50 transition-colors">
           <div
-            className="flex items-center gap-2 px-3 border-r border-[#1a1a1a] shrink-0"
-            style={{ background: "#0D0D0D" }}
+            className="flex items-center gap-2 px-3 border-r border-[var(--border)] shrink-0"
+            style={{ background: "var(--bg-card)" }}
           >
-            <span className="text-xs text-[#666660]" style={{ fontFamily: "'Space Mono', monospace" }}>FLOW</span>
+            <span className="text-xs text-[var(--text-muted)]" style={{ fontFamily: "'Space Mono', monospace" }}>FLOW</span>
           </div>
           <input
             type="number"
@@ -401,34 +401,34 @@ export function CreateIntentForm() {
             min="0.001"
             step="0.001"
             required
-            className="flex-1 px-4 py-3 bg-transparent text-[#F5F5F0] text-sm font-mono placeholder:text-[#666660] outline-none"
+            className="flex-1 px-4 py-3 bg-transparent text-[var(--text-primary)] text-sm font-mono placeholder:text-[var(--text-muted)] outline-none"
           />
         </div>
-        <p className="text-[10px] text-[#666660] mt-1" style={{ fontFamily: "'Space Mono', monospace" }}>
+        <p className="text-[10px] text-[var(--text-muted)] mt-1" style={{ fontFamily: "'Space Mono', monospace" }}>
           Higher commission attracts more solvers. Locked until execution or cancel.
         </p>
       </div>
 
       {/* Total cost */}
       {amount && !isNaN(parseFloat(amount)) && (
-        <div className="border border-[#1a1a1a] divide-y divide-[#1a1a1a]">
+        <div className="border border-[var(--border)] divide-y divide-[var(--border)]">
           <div className="flex justify-between px-4 py-3 text-xs">
-            <span className="text-[#666660]" style={{ fontFamily: "'Space Mono', monospace" }}>
+            <span className="text-[var(--text-muted)]" style={{ fontFamily: "'Space Mono', monospace" }}>
               Principal (declared)
             </span>
-            <span className="text-[#F5F5F0]" style={{ fontFamily: "'Space Mono', monospace" }}>
+            <span className="text-[var(--text-primary)]" style={{ fontFamily: "'Space Mono', monospace" }}>
               {parseFloat(amount).toFixed(4)} FLOW
-              <span className="text-[#666660] ml-1">(stays in wallet)</span>
+              <span className="text-[var(--text-muted)] ml-1">(stays in wallet)</span>
             </span>
           </div>
           <div className="flex justify-between px-4 py-3 text-xs">
-            <span className="text-[#666660]" style={{ fontFamily: "'Space Mono', monospace" }}>
+            <span className="text-[var(--text-muted)]" style={{ fontFamily: "'Space Mono', monospace" }}>
               Commission Escrow
             </span>
-            <span className="text-[#F5F5F0]" style={{ fontFamily: "'Space Mono', monospace" }}>{escrowAmount} FLOW</span>
+            <span className="text-[var(--text-primary)]" style={{ fontFamily: "'Space Mono', monospace" }}>{escrowAmount} FLOW</span>
           </div>
           <div className="flex justify-between px-4 py-3 text-xs">
-            <span className="text-[#F5F5F0] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>
+            <span className="text-[var(--text-primary)] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>
               Locked Now
             </span>
             <span className="text-[#0047FF] font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>
@@ -448,10 +448,10 @@ export function CreateIntentForm() {
             className={cn(
               "flex items-start gap-3 p-4 border text-xs",
               txResult.success
-                ? "border-[#00C566]/30 text-[#00C566]"
+                ? "border-[var(--accent)]/30 text-[var(--accent)]"
                 : "border-red-800 text-red-400"
             )}
-            style={{ background: txResult.success ? "#00C56608" : "#ff000008" }}
+            style={{ background: txResult.success ? "var(--accent-dim)" : "#ff000008" }}
           >
             {txResult.success ? (
               <CheckCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
@@ -462,14 +462,14 @@ export function CreateIntentForm() {
               {txResult.success ? (
                 <>
                   <div className="font-medium">Intent created successfully</div>
-                  <div className="text-[#00C566]/70 text-[11px] mt-1.5">
+                  <div className="text-[var(--accent)]/70 text-[11px] mt-1.5">
                     Solvers are now competing to fill your intent. Check the{" "}
-                    <a href="/live" className="underline hover:text-[#00C566]">Live Feed</a>{" "}
+                    <a href="/live" className="underline hover:text-[var(--accent)]">Live Feed</a>{" "}
                     or{" "}
-                    <a href="/app" className="underline hover:text-[#00C566]">My Intents</a>{" "}
+                    <a href="/app" className="underline hover:text-[var(--accent)]">My Intents</a>{" "}
                     to see bids as they arrive.
                   </div>
-                  <div className="text-[#00C566]/40 text-[10px] mt-1 break-all">
+                  <div className="text-[var(--accent)]/40 text-[10px] mt-1 break-all">
                     TX: {txResult.txId}
                   </div>
                 </>

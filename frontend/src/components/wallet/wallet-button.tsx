@@ -66,8 +66,8 @@ export function WalletButton() {
     <div className="relative">
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className="flex items-center gap-2 px-3 py-2 border border-[#1a1a1a] hover:border-[#0047FF]/40 transition-all duration-200 text-sm text-[#F5F5F0]"
-        style={{ background: "#0D0D0D", fontFamily: "'Space Mono', monospace" }}
+        className="flex items-center gap-2 px-3 py-2 border border-[var(--border)] hover:border-[#0047FF]/40 transition-all duration-200 text-sm"
+        style={{ background: "var(--bg-card)", color: "var(--text-primary)", fontFamily: "'Space Mono', monospace" }}
       >
         <span className="text-xs">
           {isFlowConnected
@@ -76,11 +76,12 @@ export function WalletButton() {
             ? shortenAddress(evmAddress || "")
             : "—"}
         </span>
-        <span className="text-[9px] text-[#666660] border border-[#1a1a1a] px-1.5 py-0.5 hidden sm:inline">
+        <span className="text-[9px] border border-[var(--border)] px-1.5 py-0.5 hidden sm:inline" style={{ color: "var(--text-muted)" }}>
           FLOW MAINNET
         </span>
         <ChevronDown
-          className={`w-3 h-3 text-[#666660] transition-transform ${showDropdown ? "rotate-180" : ""}`}
+          className={`w-3 h-3 transition-transform ${showDropdown ? "rotate-180" : ""}`}
+          style={{ color: "var(--text-muted)" }}
         />
       </button>
 
@@ -96,24 +97,24 @@ export function WalletButton() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 6 }}
               transition={{ duration: 0.12 }}
-              className="absolute right-0 top-full mt-1 w-72 border border-[#1a1a1a] z-50 overflow-hidden"
-              style={{ background: "#0D0D0D" }}
+              className="absolute right-0 top-full mt-1 w-72 border border-[var(--border)] z-50 overflow-hidden"
+              style={{ background: "var(--bg-card)" }}
             >
               {isFlowConnected && (
-                <div className="p-4 border-b border-[#1a1a1a]">
+                <div className="p-4 border-b border-[var(--border)]">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-medium text-[#666660] uppercase tracking-widest" style={{ fontFamily: "'Space Mono', monospace" }}>
+                    <span className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-widest" style={{ fontFamily: "'Space Mono', monospace" }}>
                       Flow / Cadence
                     </span>
                     <span className="ml-auto w-1.5 h-1.5 bg-[#00C566] rounded-full animate-pulse" />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-[#F5F5F0]" style={{ fontFamily: "'Space Mono', monospace" }}>
+                    <span className="text-sm" style={{ color: "var(--text-primary)", fontFamily: "'Space Mono', monospace" }}>
                       {shortenAddress(flowUser.addr || "", 6)}
                     </span>
                     <button
                       onClick={() => copyAddress(flowUser.addr || "", "flow")}
-                      className="p-1.5 hover:bg-[#1a1a1a] text-[#666660] hover:text-[#F5F5F0] transition-colors"
+                      className="p-1.5 hover:bg-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                     >
                       {copiedFlow ? (
                         <Check className="w-3.5 h-3.5 text-[#00C566]" />
@@ -126,21 +127,21 @@ export function WalletButton() {
               )}
 
               {isEvmConnected && (
-                <div className="p-4 border-b border-[#1a1a1a]">
+                <div className="p-4 border-b border-[var(--border)]">
                   <div className="flex items-center gap-2 mb-2">
                     <Zap className="w-3 h-3 text-[#0047FF]" />
-                    <span className="text-[10px] font-medium text-[#666660] uppercase tracking-widest" style={{ fontFamily: "'Space Mono', monospace" }}>
+                    <span className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-widest" style={{ fontFamily: "'Space Mono', monospace" }}>
                       Flow EVM
                     </span>
                     <span className="ml-auto w-1.5 h-1.5 bg-[#00C566] rounded-full animate-pulse" />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-[#F5F5F0]" style={{ fontFamily: "'Space Mono', monospace" }}>
+                    <span className="text-sm" style={{ color: "var(--text-primary)", fontFamily: "'Space Mono', monospace" }}>
                       {shortenAddress(evmAddress || "", 6)}
                     </span>
                     <button
                       onClick={() => copyAddress(evmAddress || "", "evm")}
-                      className="p-1.5 hover:bg-[#1a1a1a] text-[#666660] hover:text-[#F5F5F0] transition-colors"
+                      className="p-1.5 hover:bg-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                     >
                       {copiedEvm ? (
                         <Check className="w-3.5 h-3.5 text-[#00C566]" />
@@ -157,7 +158,7 @@ export function WalletButton() {
                   onClick={() => { connectFlow(); setShowDropdown(false); }}
                   className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#0047FF]/5 transition-colors text-left"
                 >
-                  <span className="text-sm text-[#666660] hover:text-[#F5F5F0] font-mono">Connect Flow Wallet</span>
+                  <span className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] font-mono">Connect Flow Wallet</span>
                 </button>
               )}
 
@@ -171,11 +172,11 @@ export function WalletButton() {
                   className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#0047FF]/5 transition-colors text-left"
                 >
                   <Zap className="w-4 h-4 text-[#0047FF]" />
-                  <span className="text-sm text-[#666660] hover:text-[#F5F5F0] font-mono">Connect EVM Wallet</span>
+                  <span className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] font-mono">Connect EVM Wallet</span>
                 </button>
               )}
 
-              <div className="p-2 border-t border-[#1a1a1a]">
+              <div className="p-2 border-t border-[var(--border)]">
                 <button
                   onClick={() => {
                     if (isFlowConnected) disconnectFlow();

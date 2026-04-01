@@ -71,15 +71,15 @@ export function BidComparisonModal({
       className="max-w-2xl"
     >
       {/* Intent summary */}
-      <div className="mb-5 border border-[#1a1a1a] px-4 py-3 flex items-center justify-between">
+      <div className="mb-5 border border-[var(--border)] px-4 py-3 flex items-center justify-between">
         <span
-          className="text-[10px] text-[#666660] uppercase tracking-widest"
+          className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest"
           style={{ fontFamily: "'Space Mono', monospace" }}
         >
           {intent.type}
         </span>
         <span
-          className="text-xs text-[#F5F5F0]"
+          className="text-xs text-[var(--text-primary)]"
           style={{ fontFamily: "'Space Mono', monospace" }}
         >
           {formatAmount(intent.amount)} FLOW ·{" "}
@@ -91,7 +91,7 @@ export function BidComparisonModal({
 
       {/* Explanation */}
       <p
-        className="text-[10px] text-[#444440] mb-4 leading-relaxed"
+        className="text-[10px] text-[var(--text-muted)] mb-4 leading-relaxed"
         style={{ fontFamily: "'Space Mono', monospace" }}
       >
         The contract auto-selects the highest-scoring bid. Scores are computed
@@ -101,14 +101,14 @@ export function BidComparisonModal({
       {loading ? (
         <div className="space-y-2 mb-5">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-12 bg-[#1a1a1a] rounded animate-pulse" />
+            <div key={i} className="h-12 bg-[var(--border)] rounded animate-pulse" />
           ))}
         </div>
       ) : error ? (
         <p className="text-red-400 text-sm text-center py-8 font-mono">{error}</p>
       ) : bids.length === 0 ? (
         <p
-          className="text-[#666660] text-center py-8 text-sm"
+          className="text-[var(--text-muted)] text-center py-8 text-sm"
           style={{ fontFamily: "'Space Mono', monospace" }}
         >
           No bids received yet.
@@ -117,7 +117,7 @@ export function BidComparisonModal({
         <>
           {/* Table header */}
           <div
-            className="grid px-4 py-2 border-b border-[#1a1a1a] text-[10px] text-[#666660] uppercase tracking-widest"
+            className="grid px-4 py-2 border-b border-[var(--border)] text-[10px] text-[var(--text-muted)] uppercase tracking-widest"
             style={{
               fontFamily: "'Space Mono', monospace",
               gridTemplateColumns: "1fr 110px 90px 70px 70px",
@@ -130,7 +130,7 @@ export function BidComparisonModal({
             <div>Gas</div>
           </div>
 
-          <div className="divide-y divide-[#1a1a1a] border border-t-0 border-[#1a1a1a] mb-5">
+          <div className="divide-y divide-[var(--border)] border border-t-0 border-[var(--border)] mb-5">
             {bids.map((bid) => {
               const isBest = bid.id === bestBid?.id;
 
@@ -146,7 +146,7 @@ export function BidComparisonModal({
                   {/* Solver */}
                   <div>
                     <div
-                      className="text-xs text-[#F5F5F0]"
+                      className="text-xs text-[var(--text-primary)]"
                       style={{ fontFamily: "'Space Mono', monospace" }}
                     >
                       {shortenAddress(bid.solverAddress)}
@@ -172,19 +172,19 @@ export function BidComparisonModal({
                       </span>
                     ) : bid.offeredAmountOut != null ? (
                       <span
-                        className="text-sm font-bold text-[#F5F5F0]"
+                        className="text-sm font-bold text-[var(--text-primary)]"
                         style={{ fontFamily: "'Space Mono', monospace" }}
                       >
                         {formatAmount(bid.offeredAmountOut)}
                       </span>
                     ) : (
-                      <span className="text-[#666660] text-xs">—</span>
+                      <span className="text-[var(--text-muted)] text-xs">—</span>
                     )}
                   </div>
 
                   {/* Strategy */}
                   <div
-                    className="text-[10px] text-[#666660] truncate"
+                    className="text-[10px] text-[var(--text-muted)] truncate"
                     style={{ fontFamily: "'Space Mono', monospace" }}
                     title={bid.strategy}
                   >
@@ -196,7 +196,7 @@ export function BidComparisonModal({
                     className="text-xs font-bold tabular-nums"
                     style={{
                       fontFamily: "'Space Mono', monospace",
-                      color: isBest ? "#00C566" : "#F5F5F0",
+                      color: isBest ? "#00C566" : "var(--text-primary)",
                     }}
                   >
                     {bid.score.toFixed(3)}
@@ -204,7 +204,7 @@ export function BidComparisonModal({
 
                   {/* Gas */}
                   <div
-                    className="text-[10px] text-[#666660]"
+                    className="text-[10px] text-[var(--text-muted)]"
                     style={{ fontFamily: "'Space Mono', monospace" }}
                   >
                     {bid.maxGasBid} FLOW
@@ -218,7 +218,7 @@ export function BidComparisonModal({
             <div>
               {txId && (
                 <p
-                  className="text-[10px] text-[#666660] text-center mb-2"
+                  className="text-[10px] text-[var(--text-muted)] text-center mb-2"
                   style={{ fontFamily: "'Space Mono', monospace" }}
                 >
                   Tx: {txId.slice(0, 16)}… sealing…
@@ -239,7 +239,7 @@ export function BidComparisonModal({
                 SELECT BEST BID →
               </Button>
               <p
-                className="text-center text-[10px] text-[#333330] mt-2"
+                className="text-center text-[10px] text-[var(--text-muted)] mt-2"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 Contract auto-selects highest score · you execute the winning strategy

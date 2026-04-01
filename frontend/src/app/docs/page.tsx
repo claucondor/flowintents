@@ -235,7 +235,7 @@ function SectionLabel({ children, color = "#0047FF" }: { children: React.ReactNo
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
     <h2
-      className="text-2xl font-bold text-[#F5F5F0] mb-4"
+      className="text-2xl font-bold text-[var(--text-primary)] mb-4"
       style={{ letterSpacing: "-0.025em" }}
     >
       {children}
@@ -253,15 +253,15 @@ function CodeBlock({
   title?: string;
 }) {
   return (
-    <div className="border border-[#1a1a1a] overflow-hidden" style={{ background: "#0a0a0a" }}>
-      <div className="px-4 py-2 border-b border-[#1a1a1a] flex items-center justify-between">
+    <div className="border border-[var(--border)] overflow-hidden" style={{ background: "var(--bg-card)" }}>
+      <div className="px-4 py-2 border-b border-[var(--border)] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-red-500/40" />
           <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/40" />
           <span className="w-2.5 h-2.5 rounded-full bg-[#00C566]/40" />
           {title && (
             <span
-              className="ml-2 text-[10px] text-[#555550]"
+              className="ml-2 text-[10px] text-[var(--text-muted)]"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               {title}
@@ -276,7 +276,7 @@ function CodeBlock({
         </span>
       </div>
       <pre
-        className="p-5 text-[11.5px] leading-relaxed overflow-x-auto text-[#9999A0]"
+        className="p-5 text-[11.5px] leading-relaxed overflow-x-auto text-[var(--text-secondary)]"
         style={{ fontFamily: "'Space Mono', monospace" }}
       >
         <code>{children}</code>
@@ -314,7 +314,7 @@ function Sidebar({
     <aside className="hidden lg:block w-52 shrink-0">
       <div className="sticky top-24">
         <div
-          className="text-[9px] text-[#444440] uppercase tracking-widest mb-4"
+          className="text-[9px] text-[var(--text-muted)] uppercase tracking-widest mb-4"
           style={{ fontFamily: "'Space Mono', monospace" }}
         >
           On this page
@@ -329,7 +329,7 @@ function Sidebar({
                 className="w-full text-left block py-1.5 px-3 text-xs transition-all border-l-2"
                 style={{
                   fontFamily: "'Space Grotesk', sans-serif",
-                  color: isActive ? "#F5F5F0" : "#555550",
+                  color: isActive ? "var(--text-primary)" : "var(--text-muted)",
                   borderColor: isActive ? "#00C566" : "transparent",
                 }}
               >
@@ -338,24 +338,24 @@ function Sidebar({
             );
           })}
         </nav>
-        <div className="mt-8 border-t border-[#1a1a1a] pt-6 space-y-2">
+        <div className="mt-8 border-t border-[var(--border)] pt-6 space-y-2">
           <Link
             href="/live"
-            className="block text-xs text-[#555550] hover:text-[#00C566] transition-colors py-1"
+            className="block text-xs text-[var(--text-muted)] hover:text-[#00C566] transition-colors py-1"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
             Live Feed →
           </Link>
           <Link
             href="/solver"
-            className="block text-xs text-[#555550] hover:text-[#0047FF] transition-colors py-1"
+            className="block text-xs text-[var(--text-muted)] hover:text-[#0047FF] transition-colors py-1"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
             Solver Guide →
           </Link>
           <Link
             href="/app"
-            className="block text-xs text-[#555550] hover:text-[#F5F5F0] transition-colors py-1"
+            className="block text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors py-1"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
             Create Intent →
@@ -387,8 +387,8 @@ function MobileNav({
               className="shrink-0 px-3 py-1.5 text-xs border transition-all"
               style={{
                 fontFamily: "'Space Grotesk', sans-serif",
-                color: isActive ? "#00C566" : "#555550",
-                borderColor: isActive ? "#00C566" : "#1a1a1a",
+                color: isActive ? "var(--accent)" : "var(--text-muted)",
+                borderColor: isActive ? "var(--accent)" : "var(--border)",
                 background: isActive ? "#00C56612" : "transparent",
               }}
             >
@@ -408,14 +408,14 @@ function SectionOverview() {
     <>
       <SectionLabel>01 — Overview</SectionLabel>
       <SectionHeading>What is FlowIntents?</SectionHeading>
-      <p className="text-[#9999A0] text-sm leading-relaxed mb-8 max-w-2xl">
+      <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-8 max-w-2xl">
         FlowIntents is an intent-based DeFi protocol on Flow blockchain. Instead of manually
         executing transactions, users declare what they want — "earn yield on 100 FLOW" or
         "swap 50 FLOW to stgUSDC" — and registered AI solver agents compete to fulfill those
         goals at the best possible terms.
       </p>
 
-      <div className="border border-[#1a1a1a]" style={{ background: "#0D0D0D" }}>
+      <div className="border border-[var(--border)]" style={{ background: "var(--bg-card)" }}>
         {[
           {
             step: "01",
@@ -444,11 +444,11 @@ function SectionOverview() {
         ].map((item, i, arr) => (
           <div
             key={item.step}
-            className={`p-6 flex gap-5 ${i < arr.length - 1 ? "border-b border-[#1a1a1a]" : ""}`}
+            className={`p-6 flex gap-5 ${i < arr.length - 1 ? "border-b border-[var(--border)]" : ""}`}
           >
             <div
               className="text-2xl font-bold shrink-0 w-10 text-right tabular-nums"
-              style={{ fontFamily: "'Space Mono', monospace", color: "#1a1a22" }}
+              style={{ fontFamily: "'Space Mono', monospace", color: "var(--border)" }}
             >
               {item.step}
             </div>
@@ -459,7 +459,7 @@ function SectionOverview() {
               >
                 {item.title}
               </div>
-              <p className="text-sm text-[#9999A0] leading-relaxed">{item.desc}</p>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{item.desc}</p>
             </div>
           </div>
         ))}
@@ -473,14 +473,14 @@ function SectionArchitecture() {
     <>
       <SectionLabel>02 — Architecture</SectionLabel>
       <SectionHeading>How the layers connect</SectionHeading>
-      <p className="text-[#9999A0] text-sm leading-relaxed mb-8 max-w-2xl">
+      <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-8 max-w-2xl">
         FlowIntents spans two execution environments bridged by Flow's native COA
         (Cadence-Owned Account) mechanism: Cadence for intent lifecycle and settlement,
         Flow EVM for DeFi protocol execution.
       </p>
 
       {/* Architecture diagram */}
-      <div className="border border-[#1a1a1a] p-6" style={{ background: "#0D0D0D" }}>
+      <div className="border border-[var(--border)] p-6" style={{ background: "var(--bg-card)" }}>
         <div className="grid grid-cols-3 gap-4 text-center text-[11px]" style={{ fontFamily: "'Space Mono', monospace" }}>
           {/* Row 1 */}
           <div className="col-span-3 flex justify-center">
@@ -490,11 +490,11 @@ function SectionArchitecture() {
           </div>
 
           {/* Arrow down */}
-          <div className="col-span-3 flex justify-center items-center text-[#333330] py-1 text-base">↓ submitIntent + commission escrow</div>
+          <div className="col-span-3 flex justify-center items-center text-[var(--text-muted)] py-1 text-base">↓ submitIntent + commission escrow</div>
 
           {/* Cadence layer */}
-          <div className="col-span-3 border border-[#1a1a1a] p-4" style={{ background: "#111114" }}>
-            <div className="text-[9px] text-[#444440] uppercase tracking-widest mb-3">Cadence Layer — {CADENCE_ACCOUNT}</div>
+          <div className="col-span-3 border border-[var(--border)] p-4" style={{ background: "var(--bg-elevated)" }}>
+            <div className="text-[9px] text-[var(--text-muted)] uppercase tracking-widest mb-3">Cadence Layer — {CADENCE_ACCOUNT}</div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
                 "IntentMarketplaceV0_4",
@@ -502,7 +502,7 @@ function SectionArchitecture() {
                 "IntentExecutorV0_4",
                 "SolverRegistryV0_1",
               ].map((c) => (
-                <div key={c} className="px-2 py-2 border border-[#1a1a1a] text-[#9999A0] text-[10px]">
+                <div key={c} className="px-2 py-2 border border-[var(--border)] text-[var(--text-secondary)] text-[10px]">
                   {c}
                 </div>
               ))}
@@ -510,7 +510,7 @@ function SectionArchitecture() {
           </div>
 
           {/* COA bridge */}
-          <div className="col-span-3 flex justify-center items-center text-[#333330] py-1 text-base">↓ COA cross-VM call</div>
+          <div className="col-span-3 flex justify-center items-center text-[var(--text-muted)] py-1 text-base">↓ COA cross-VM call</div>
 
           {/* EVM layer */}
           <div className="col-span-3 border border-[#00C566]/20 p-4" style={{ background: "#00C56608" }}>
@@ -524,10 +524,10 @@ function SectionArchitecture() {
           </div>
 
           {/* Protocols */}
-          <div className="col-span-3 flex justify-center items-center text-[#333330] py-1 text-base">↓ execute strategy</div>
+          <div className="col-span-3 flex justify-center items-center text-[var(--text-muted)] py-1 text-base">↓ execute strategy</div>
 
-          <div className="col-span-3 border border-[#1a1a1a] p-4" style={{ background: "#111114" }}>
-            <div className="text-[9px] text-[#444440] uppercase tracking-widest mb-3">DeFi Protocols on Flow EVM</div>
+          <div className="col-span-3 border border-[var(--border)] p-4" style={{ background: "var(--bg-elevated)" }}>
+            <div className="text-[9px] text-[var(--text-muted)] uppercase tracking-widest mb-3">DeFi Protocols on Flow EVM</div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
                 { name: "Ankr", desc: "Liquid staking ~4.2%" },
@@ -535,9 +535,9 @@ function SectionArchitecture() {
                 { name: "PunchSwap", desc: "UniswapV2 DEX" },
                 { name: "WFLOW", desc: "Wrapped FLOW ERC-20" },
               ].map((p) => (
-                <div key={p.name} className="px-2 py-2 border border-[#1a1a1a] text-[10px]">
-                  <div className="text-[#9999A0]">{p.name}</div>
-                  <div className="text-[#444440] text-[9px]">{p.desc}</div>
+                <div key={p.name} className="px-2 py-2 border border-[var(--border)] text-[10px]">
+                  <div className="text-[var(--text-secondary)]">{p.name}</div>
+                  <div className="text-[var(--text-muted)] text-[9px]">{p.desc}</div>
                 </div>
               ))}
             </div>
@@ -546,8 +546,8 @@ function SectionArchitecture() {
       </div>
 
       {/* Component table */}
-      <div className="mt-6 border border-[#1a1a1a] overflow-hidden" style={{ background: "#0D0D0D" }}>
-        <div className="grid grid-cols-3 px-5 py-2.5 border-b border-[#1a1a1a] text-[10px] text-[#444440] uppercase tracking-widest" style={{ fontFamily: "'Space Mono', monospace" }}>
+      <div className="mt-6 border border-[var(--border)] overflow-hidden" style={{ background: "var(--bg-card)" }}>
+        <div className="grid grid-cols-3 px-5 py-2.5 border-b border-[var(--border)] text-[10px] text-[var(--text-muted)] uppercase tracking-widest" style={{ fontFamily: "'Space Mono', monospace" }}>
           <span>Layer</span>
           <span>Component</span>
           <span>Role</span>
@@ -561,21 +561,21 @@ function SectionArchitecture() {
         ].map((row, i, arr) => (
           <div
             key={row.name}
-            className={`grid grid-cols-3 px-5 py-3 text-xs ${i < arr.length - 1 ? "border-b border-[#1a1a1a]" : ""}`}
+            className={`grid grid-cols-3 px-5 py-3 text-xs ${i < arr.length - 1 ? "border-b border-[var(--border)]" : ""}`}
           >
             <span
-              className="text-[#555550]"
+              className="text-[var(--text-muted)]"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               {row.layer}
             </span>
             <span
-              className="text-[#F5F5F0] text-[11px]"
+              className="text-[var(--text-primary)] text-[11px]"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               {row.name}
             </span>
-            <span className="text-[#666660]">{row.role}</span>
+            <span className="text-[var(--text-muted)]">{row.role}</span>
           </div>
         ))}
       </div>
@@ -588,7 +588,7 @@ function SectionIntentTypes() {
     <>
       <SectionLabel>03 — Intent Types</SectionLabel>
       <SectionHeading>Yield vs Swap</SectionHeading>
-      <p className="text-[#9999A0] text-sm leading-relaxed mb-8 max-w-2xl">
+      <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-8 max-w-2xl">
         FlowIntents V0_4 supports two intent types. Both use the same bid infrastructure;
         only the scoring formula and required fields differ.
       </p>
@@ -624,35 +624,35 @@ function SectionIntentTypes() {
             scoring: "offeredAmountOut × rep × 0.7 + gasEfficiency × 0.3",
           },
         ].map((intent) => (
-          <div key={intent.type} className="border border-[#1a1a1a]" style={{ background: "#0D0D0D" }}>
-            <div className="px-5 py-4 border-b border-[#1a1a1a] flex items-center gap-3">
+          <div key={intent.type} className="border border-[var(--border)]" style={{ background: "var(--bg-card)" }}>
+            <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-3">
               <Badge color={intent.color}>{intent.type}</Badge>
               <span
-                className="text-[10px] text-[#444440]"
+                className="text-[10px] text-[var(--text-muted)]"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 intentType: {intent.typeNum}
               </span>
             </div>
-            <div className="px-5 py-4 border-b border-[#1a1a1a]">
-              <p className="text-sm text-[#9999A0] leading-relaxed">{intent.desc}</p>
+            <div className="px-5 py-4 border-b border-[var(--border)]">
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{intent.desc}</p>
             </div>
-            <div className="px-5 py-4 border-b border-[#1a1a1a]">
-              <div className="text-[10px] text-[#444440] uppercase tracking-widest mb-3" style={{ fontFamily: "'Space Mono', monospace" }}>
+            <div className="px-5 py-4 border-b border-[var(--border)]">
+              <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-3" style={{ fontFamily: "'Space Mono', monospace" }}>
                 Required fields
               </div>
               <div className="space-y-1.5">
                 {intent.fields.map((f) => (
                   <div key={f.name} className="flex items-start gap-3 text-xs">
-                    <span className="text-[#F5F5F0] w-36 shrink-0" style={{ fontFamily: "'Space Mono', monospace" }}>{f.name}</span>
-                    <span className="text-[#444440] w-16 shrink-0" style={{ fontFamily: "'Space Mono', monospace" }}>{f.type}</span>
-                    <span className="text-[#666660]">{f.note}</span>
+                    <span className="text-[var(--text-primary)] w-36 shrink-0" style={{ fontFamily: "'Space Mono', monospace" }}>{f.name}</span>
+                    <span className="text-[var(--text-muted)] w-16 shrink-0" style={{ fontFamily: "'Space Mono', monospace" }}>{f.type}</span>
+                    <span className="text-[var(--text-muted)]">{f.note}</span>
                   </div>
                 ))}
               </div>
             </div>
             <div className="px-5 py-3">
-              <div className="text-[10px] text-[#444440] uppercase tracking-widest mb-1.5" style={{ fontFamily: "'Space Mono', monospace" }}>
+              <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-1.5" style={{ fontFamily: "'Space Mono', monospace" }}>
                 Scoring formula
               </div>
               <code
@@ -674,14 +674,14 @@ function SectionContracts() {
     <>
       <SectionLabel>04 — Deployed Contracts</SectionLabel>
       <SectionHeading>Flow Mainnet Addresses</SectionHeading>
-      <p className="text-[#9999A0] text-sm leading-relaxed mb-6 max-w-2xl">
+      <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6 max-w-2xl">
         All Cadence contracts are deployed on the same account. The EVM composer runs on
         Flow EVM (chainId 747) — same network, separate execution environment.
       </p>
 
-      <div className="border border-[#1a1a1a] overflow-hidden" style={{ background: "#0D0D0D" }}>
+      <div className="border border-[var(--border)] overflow-hidden" style={{ background: "var(--bg-card)" }}>
         <div
-          className="grid grid-cols-12 px-5 py-2.5 border-b border-[#1a1a1a] text-[9px] text-[#444440] uppercase tracking-widest"
+          className="grid grid-cols-12 px-5 py-2.5 border-b border-[var(--border)] text-[9px] text-[var(--text-muted)] uppercase tracking-widest"
           style={{ fontFamily: "'Space Mono', monospace" }}
         >
           <span className="col-span-4">Contract</span>
@@ -692,19 +692,19 @@ function SectionContracts() {
         {CONTRACTS.map((c, i) => (
           <div
             key={c.name}
-            className={`grid grid-cols-12 px-5 py-4 items-start gap-x-2 ${i < CONTRACTS.length - 1 ? "border-b border-[#1a1a1a]" : ""}`}
+            className={`grid grid-cols-12 px-5 py-4 items-start gap-x-2 ${i < CONTRACTS.length - 1 ? "border-b border-[var(--border)]" : ""}`}
           >
             <div className="col-span-4">
               <div
-                className="text-xs font-bold text-[#F5F5F0] mb-0.5"
+                className="text-xs font-bold text-[var(--text-primary)] mb-0.5"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 {c.name}
               </div>
-              <div className="text-[11px] text-[#555550] leading-snug pr-4">{c.desc}</div>
+              <div className="text-[11px] text-[var(--text-muted)] leading-snug pr-4">{c.desc}</div>
             </div>
             <div className="col-span-2">
-              <Badge color={c.chain === "Cadence" ? "#9999A0" : "#00C566"}>
+              <Badge color={c.chain === "Cadence" ? "var(--text-secondary)" : "var(--accent)"}>
                 {c.chain}
               </Badge>
             </div>
@@ -716,7 +716,7 @@ function SectionContracts() {
                 href={c.explorer}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[11px] text-[#9999A0] hover:text-[#00C566] transition-colors break-all"
+                className="text-[11px] text-[var(--text-secondary)] hover:text-[#00C566] transition-colors break-all"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 {c.address} ↗
@@ -727,9 +727,9 @@ function SectionContracts() {
       </div>
 
       {/* EVM Tokens */}
-      <div className="mt-6 border border-[#1a1a1a] overflow-hidden" style={{ background: "#0D0D0D" }}>
-        <div className="px-5 py-3 border-b border-[#1a1a1a]">
-          <div className="text-[10px] text-[#444440] uppercase tracking-widest" style={{ fontFamily: "'Space Mono', monospace" }}>
+      <div className="mt-6 border border-[var(--border)] overflow-hidden" style={{ background: "var(--bg-card)" }}>
+        <div className="px-5 py-3 border-b border-[var(--border)]">
+          <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest" style={{ fontFamily: "'Space Mono', monospace" }}>
             Key EVM Token Addresses (Flow EVM · chainId 747)
           </div>
         </div>
@@ -739,10 +739,10 @@ function SectionContracts() {
           { name: "USDF (PYUSD)", address: "0x4A96a408F5EB872b94a4b27b97b08eA77bc55784", note: "PYUSD — multi-hop route" },
           { name: "PunchSwap Router", address: "0xA671B20dE3a479b2D895A9A4f8B1cC4AF24Da52c", note: "UniswapV2-compatible DEX" },
         ].map((t, i, arr) => (
-          <div key={t.name} className={`px-5 py-3 flex items-center gap-4 text-xs ${i < arr.length - 1 ? "border-b border-[#1a1a1a]" : ""}`}>
-            <span className="w-28 text-[#F5F5F0] shrink-0" style={{ fontFamily: "'Space Mono', monospace" }}>{t.name}</span>
-            <span className="text-[#9999A0] flex-1" style={{ fontFamily: "'Space Mono', monospace" }}>{t.address}</span>
-            <span className="text-[#555550] text-[11px]">{t.note}</span>
+          <div key={t.name} className={`px-5 py-3 flex items-center gap-4 text-xs ${i < arr.length - 1 ? "border-b border-[var(--border)]" : ""}`}>
+            <span className="w-28 text-[var(--text-primary)] shrink-0" style={{ fontFamily: "'Space Mono', monospace" }}>{t.name}</span>
+            <span className="text-[var(--text-secondary)] flex-1" style={{ fontFamily: "'Space Mono', monospace" }}>{t.address}</span>
+            <span className="text-[var(--text-muted)] text-[11px]">{t.note}</span>
           </div>
         ))}
       </div>
@@ -755,14 +755,14 @@ function SectionSolverGuide() {
     <>
       <SectionLabel>05 — Solver Guide</SectionLabel>
       <SectionHeading>Build an autonomous solver</SectionHeading>
-      <p className="text-[#9999A0] text-sm leading-relaxed mb-8 max-w-2xl">
+      <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-8 max-w-2xl">
         Solvers are autonomous agents that monitor open intents, evaluate which strategy
         offers the best terms, submit competitive bids, and earn the commission escrow for
         each successful execution. Here is the step-by-step lifecycle.
       </p>
 
       {/* Steps */}
-      <div className="border border-[#1a1a1a] mb-8" style={{ background: "#0D0D0D" }}>
+      <div className="border border-[var(--border)] mb-8" style={{ background: "var(--bg-card)" }}>
         {[
           {
             step: "01",
@@ -774,7 +774,7 @@ function SectionSolverGuide() {
             step: "02",
             title: "Listen for open intents",
             desc: "Poll IntentMarketplaceV0_4 using the SDK's EventListener or fetch open intents via a Cadence script. Subscribe to the IntentCreated event for real-time updates.",
-            color: "#9999A0",
+            color: "var(--text-secondary)",
           },
           {
             step: "03",
@@ -797,11 +797,11 @@ function SectionSolverGuide() {
         ].map((item, i, arr) => (
           <div
             key={item.step}
-            className={`p-6 flex gap-5 ${i < arr.length - 1 ? "border-b border-[#1a1a1a]" : ""}`}
+            className={`p-6 flex gap-5 ${i < arr.length - 1 ? "border-b border-[var(--border)]" : ""}`}
           >
             <div
               className="text-2xl font-bold shrink-0 w-10 text-right tabular-nums"
-              style={{ fontFamily: "'Space Mono', monospace", color: "#1a1a22" }}
+              style={{ fontFamily: "'Space Mono', monospace", color: "var(--border)" }}
             >
               {item.step}
             </div>
@@ -809,7 +809,7 @@ function SectionSolverGuide() {
               <div className="text-sm font-semibold mb-1.5" style={{ color: item.color }}>
                 {item.title}
               </div>
-              <p className="text-sm text-[#9999A0] leading-relaxed">{item.desc}</p>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{item.desc}</p>
             </div>
           </div>
         ))}
@@ -835,49 +835,49 @@ npx ts-node sdk/solver-bot-b.ts          # AlphaYield + multi-hop swap`}
       </CodeBlock>
 
       {/* Scoring formula */}
-      <div className="mt-6 border border-[#1a1a1a] p-5" style={{ background: "#0D0D0D" }}>
-        <div className="text-[10px] text-[#444440] uppercase tracking-widest mb-4" style={{ fontFamily: "'Space Mono', monospace" }}>
+      <div className="mt-6 border border-[var(--border)] p-5" style={{ background: "var(--bg-card)" }}>
+        <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4" style={{ fontFamily: "'Space Mono', monospace" }}>
           Bid scoring — BidManagerV0_4
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <div className="text-[11px] text-[#555550] mb-1.5" style={{ fontFamily: "'Space Mono', monospace" }}>Yield intents</div>
+            <div className="text-[11px] text-[var(--text-muted)] mb-1.5" style={{ fontFamily: "'Space Mono', monospace" }}>Yield intents</div>
             <code className="text-sm text-[#00C566]" style={{ fontFamily: "'Space Mono', monospace" }}>
               score = offeredAPY × 0.7 + gasEff × 0.3
             </code>
           </div>
           <div>
-            <div className="text-[11px] text-[#555550] mb-1.5" style={{ fontFamily: "'Space Mono', monospace" }}>Swap intents</div>
+            <div className="text-[11px] text-[var(--text-muted)] mb-1.5" style={{ fontFamily: "'Space Mono', monospace" }}>Swap intents</div>
             <code className="text-sm text-[#00C566]" style={{ fontFamily: "'Space Mono', monospace" }}>
               score = amountOut × rep × 0.7 + gasEff × 0.3
             </code>
           </div>
         </div>
-        <p className="text-xs text-[#555550] mt-4">
+        <p className="text-xs text-[var(--text-muted)] mt-4">
           gasEff = (maxGasBid) &mdash; lower bids score higher on the gas dimension. Ties are broken by lowest gas bid.
         </p>
       </div>
 
       {/* Events to subscribe */}
-      <div className="mt-6 border border-[#1a1a1a] overflow-hidden" style={{ background: "#0D0D0D" }}>
-        <div className="px-5 py-3 border-b border-[#1a1a1a]">
-          <div className="text-[10px] text-[#444440] uppercase tracking-widest" style={{ fontFamily: "'Space Mono', monospace" }}>
+      <div className="mt-6 border border-[var(--border)] overflow-hidden" style={{ background: "var(--bg-card)" }}>
+        <div className="px-5 py-3 border-b border-[var(--border)]">
+          <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest" style={{ fontFamily: "'Space Mono', monospace" }}>
             Events to subscribe to
           </div>
         </div>
         {EVENTS.map((evt, i) => (
-          <div key={evt.name} className={`px-5 py-4 ${i < EVENTS.length - 1 ? "border-b border-[#1a1a1a]" : ""}`}>
-            <div className="text-xs font-bold text-[#F5F5F0] mb-1" style={{ fontFamily: "'Space Mono', monospace" }}>
+          <div key={evt.name} className={`px-5 py-4 ${i < EVENTS.length - 1 ? "border-b border-[var(--border)]" : ""}`}>
+            <div className="text-xs font-bold text-[var(--text-primary)] mb-1" style={{ fontFamily: "'Space Mono', monospace" }}>
               A.{CADENCE_ACCOUNT.slice(2)}.{evt.name}
             </div>
-            <div className="text-[11px] text-[#555550] mb-1" style={{ fontFamily: "'Space Mono', monospace" }}>
+            <div className="text-[11px] text-[var(--text-muted)] mb-1" style={{ fontFamily: "'Space Mono', monospace" }}>
               {evt.fields}
             </div>
-            <p className="text-xs text-[#666660]">{evt.desc}</p>
+            <p className="text-xs text-[var(--text-muted)]">{evt.desc}</p>
           </div>
         ))}
-        <div className="px-5 py-3 border-t border-[#1a1a1a]">
-          <code className="text-[10px] text-[#444440]" style={{ fontFamily: "'Space Mono', monospace" }}>
+        <div className="px-5 py-3 border-t border-[var(--border)]">
+          <code className="text-[10px] text-[var(--text-muted)]" style={{ fontFamily: "'Space Mono', monospace" }}>
             GET /v1/events?type=A.c65395858a38d8ff.BidManagerV0_4.BidSubmitted&start_height=N&end_height=M
           </code>
         </div>
@@ -891,7 +891,7 @@ function SectionSDKReference() {
     <>
       <SectionLabel>06 — SDK Reference</SectionLabel>
       <SectionHeading>@flowintents/solver-sdk</SectionHeading>
-      <p className="text-[#9999A0] text-sm leading-relaxed mb-8 max-w-2xl">
+      <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-8 max-w-2xl">
         The SDK provides everything a solver needs: event listening, strategy evaluation,
         bid construction, and FCL transaction submission.
       </p>
@@ -1013,36 +1013,36 @@ function SectionStrategyCatalog() {
     <>
       <SectionLabel>07 — Strategy Catalog</SectionLabel>
       <SectionHeading>Built-in strategies</SectionHeading>
-      <p className="text-[#9999A0] text-sm leading-relaxed mb-8 max-w-2xl">
+      <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-8 max-w-2xl">
         These four strategies cover the full surface of live DeFi protocols on Flow EVM.
-        Each produces an ABI-encoded <code className="text-[#9999A0]">StrategyStep[]</code> consumed
-        by <code className="text-[#9999A0]">FlowIntentsComposerV5.executeStrategyWithFunds()</code>.
+        Each produces an ABI-encoded <code className="text-[var(--text-secondary)]">StrategyStep[]</code> consumed
+        by <code className="text-[var(--text-secondary)]">FlowIntentsComposerV5.executeStrategyWithFunds()</code>.
       </p>
 
       <div className="space-y-6">
         {STRATEGIES.map((s) => (
-          <div key={s.id} className="border border-[#1a1a1a]" style={{ background: "#0D0D0D" }}>
+          <div key={s.id} className="border border-[var(--border)]" style={{ background: "var(--bg-card)" }}>
             {/* Header */}
-            <div className="px-6 py-4 border-b border-[#1a1a1a] flex flex-wrap items-center gap-3">
+            <div className="px-6 py-4 border-b border-[var(--border)] flex flex-wrap items-center gap-3">
               <Badge color={s.color}>{s.label}</Badge>
-              <span className="text-sm font-semibold text-[#F5F5F0]">{s.title}</span>
+              <span className="text-sm font-semibold text-[var(--text-primary)]">{s.title}</span>
               <span className="ml-auto flex items-center gap-2">
-                <Badge color="#555550">{s.bot}</Badge>
+                <Badge color="var(--text-muted)">{s.bot}</Badge>
                 <Badge color={s.type === "Yield" ? "#00C566" : "#0047FF"}>{s.type}</Badge>
                 <Badge color="#F5C542">{s.apy}</Badge>
               </span>
             </div>
             {/* Description */}
-            <div className="px-6 py-4 border-b border-[#1a1a1a]">
-              <p className="text-sm text-[#9999A0] leading-relaxed">{s.desc}</p>
+            <div className="px-6 py-4 border-b border-[var(--border)]">
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{s.desc}</p>
             </div>
             {/* Code */}
             <div className="px-4 pt-0 pb-0">
-              <div className="px-1 py-2 text-[10px] text-[#333330]" style={{ fontFamily: "'Space Mono', monospace" }}>
+              <div className="px-1 py-2 text-[10px] text-[var(--text-muted)]" style={{ fontFamily: "'Space Mono', monospace" }}>
                 example usage
               </div>
               <pre
-                className="pb-5 px-1 text-[11px] leading-relaxed overflow-x-auto text-[#9999A0]"
+                className="pb-5 px-1 text-[11px] leading-relaxed overflow-x-auto text-[var(--text-secondary)]"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 <code>{s.snippet}</code>
@@ -1084,7 +1084,7 @@ function SectionSubmitIntent() {
     <>
       <SectionLabel>08 — Submit an Intent</SectionLabel>
       <SectionHeading>Create your first intent</SectionHeading>
-      <p className="text-[#9999A0] text-sm leading-relaxed mb-8 max-w-2xl">
+      <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-8 max-w-2xl">
         Intents are created by calling the Cadence transaction directly via Flow CLI,
         or through the frontend UI at <Link href="/app" className="text-[#0047FF] hover:text-white transition-colors">/app</Link>.
         Only the commission escrow is deposited on creation — the principal stays in your wallet
@@ -1219,10 +1219,10 @@ transaction(
         >
           Ready to start?
         </div>
-        <h3 className="text-xl font-bold text-[#F5F5F0] mb-3">
+        <h3 className="text-xl font-bold text-[var(--text-primary)] mb-3">
           Create an intent or build a solver.
         </h3>
-        <p className="text-[#9999A0] text-sm mb-6 max-w-lg">
+        <p className="text-[var(--text-secondary)] text-sm mb-6 max-w-lg">
           The frontend lets you create intents with a wallet. The SDK gives you everything
           needed to build a competitive solver bot.
         </p>
@@ -1237,7 +1237,7 @@ transaction(
           </Link>
           <Link href="/live">
             <button
-              className="px-6 py-2.5 text-sm font-medium text-[#F5F5F0] border border-[#1a1a1a] hover:border-[#0047FF]/40 transition-all"
+              className="px-6 py-2.5 text-sm font-medium text-[var(--text-primary)] border border-[var(--border)] hover:border-[#0047FF]/40 transition-all"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             >
               Watch Live Feed
@@ -1245,7 +1245,7 @@ transaction(
           </Link>
           <Link href="/solver">
             <button
-              className="px-6 py-2.5 text-sm font-medium text-[#9999A0] border border-[#1a1a1a] hover:border-[#00C566]/40 hover:text-[#F5F5F0] transition-all"
+              className="px-6 py-2.5 text-sm font-medium text-[var(--text-secondary)] border border-[var(--border)] hover:border-[#00C566]/40 hover:text-[var(--text-primary)] transition-all"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             >
               Solver Guide
@@ -1284,7 +1284,7 @@ export default function DocsPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "#050509" }}>
+    <div className="min-h-screen" style={{ background: "var(--bg-base)" }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
         {/* Page header */}
@@ -1295,18 +1295,18 @@ export default function DocsPage() {
           className="mb-14"
         >
           <div
-            className="text-[10px] text-[#666660] uppercase tracking-widest mb-4"
+            className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4"
             style={{ fontFamily: "'Space Mono', monospace" }}
           >
             Developer Documentation
           </div>
           <h1
-            className="text-4xl sm:text-5xl font-bold text-[#F5F5F0] mb-5"
+            className="text-4xl sm:text-5xl font-bold text-[var(--text-primary)] mb-5"
             style={{ letterSpacing: "-0.03em" }}
           >
             FlowIntents Docs
           </h1>
-          <p className="text-[#9999A0] text-base leading-relaxed max-w-2xl">
+          <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-2xl">
             Intent-based DeFi on Flow blockchain. Users declare financial goals — yield or swap —
             and autonomous solver agents compete to fulfill them on-chain.
           </p>
@@ -1314,7 +1314,7 @@ export default function DocsPage() {
             <Badge color="#00C566">Flow Mainnet</Badge>
             <Badge color="#0047FF">V0_4</Badge>
             <Badge color="#F5C542">chainId 747</Badge>
-            <Badge color="#9999A0">MIT License</Badge>
+            <Badge color="var(--text-secondary)">MIT License</Badge>
           </div>
         </motion.div>
 

@@ -23,14 +23,14 @@ function Ticker() {
   const content = TICKER_ITEMS.join(" · ") + " · ";
   return (
     <div
-      className="w-full overflow-hidden border-b border-[#1a1a1a]"
-      style={{ height: "36px", background: "#07070E" }}
+      className="w-full overflow-hidden border-b border-[var(--border)]"
+      style={{ height: "36px", background: "var(--bg-base)" }}
     >
       <div className="flex animate-marquee whitespace-nowrap" style={{ width: "200%" }}>
         {[content, content].map((text, i) => (
           <span
             key={i}
-            className="text-[10px] text-[#9999A0] leading-[36px] px-4"
+            className="text-[10px] text-[var(--text-secondary)] leading-[36px] px-4"
             style={{ fontFamily: "'Space Mono', monospace" }}
           >
             {text}
@@ -108,7 +108,7 @@ function Typewriter() {
   }, [displayed, typing, phraseIdx])
 
   return (
-    <p className="text-base text-[#9999A0] leading-relaxed max-w-md h-12">
+    <p className="text-base text-[var(--text-secondary)] leading-relaxed max-w-md h-12">
       {displayed}
       <span className="inline-block w-0.5 h-4 bg-[#0047FF] ml-0.5 animate-pulse" />
     </p>
@@ -152,23 +152,23 @@ function HeroDemo() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="absolute top-0 left-0 w-full border border-[#1a1a1a] p-4"
-            style={{ background: "#0D0D0D" }}
+            className="absolute top-0 left-0 w-full border border-[var(--border)] p-4"
+            style={{ background: "var(--bg-card)" }}
           >
             <div
-              className="text-[9px] text-[#9999A0] uppercase tracking-widest mb-3"
+              className="text-[9px] text-[var(--text-secondary)] uppercase tracking-widest mb-3"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               LOT #2847 · SWAP INTENT
             </div>
             <div
-              className="text-sm text-[#F5F5F0] font-medium mb-1"
+              className="text-sm text-[var(--text-primary)] font-medium mb-1"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               SWAP 0.2 FLOW → stgUSDC
             </div>
-            <div className="text-[11px] text-[#9999A0]">Min: 3,000 units · 30d duration</div>
-            <div className="mt-3 pt-3 border-t border-[#1a1a1a] flex items-center gap-2">
+            <div className="text-[11px] text-[var(--text-secondary)]">Min: 3,000 units · 30d duration</div>
+            <div className="mt-3 pt-3 border-t border-[var(--border)] flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-[#0047FF] rounded-full animate-pulse" />
               <span
                 className="text-[10px] text-[#0047FF]"
@@ -190,7 +190,7 @@ function HeroDemo() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.35 }}
             className="absolute top-[110px] left-[24px] w-[300px] border border-[#0047FF]/40 p-4"
-            style={{ background: "#0D0D0D" }}
+            style={{ background: "var(--bg-card)" }}
           >
             <div
               className="text-[9px] text-[#0047FF] uppercase tracking-widest mb-2"
@@ -201,15 +201,15 @@ function HeroDemo() {
             <div className="flex items-center justify-between">
               <div>
                 <div
-                  className="text-xs text-[#F5F5F0] font-medium"
+                  className="text-xs text-[var(--text-primary)] font-medium"
                   style={{ fontFamily: "'Space Mono', monospace" }}
                 >
                   Solver A
                 </div>
-                <div className="text-[11px] text-[#9999A0]">via PunchSwap</div>
+                <div className="text-[11px] text-[var(--text-secondary)]">via PunchSwap</div>
               </div>
               <div
-                className="text-sm text-[#F5F5F0] font-bold"
+                className="text-sm text-[var(--text-primary)] font-bold"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 3,191 stgUSDC
@@ -228,7 +228,7 @@ function HeroDemo() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
             className="absolute top-[195px] left-[48px] w-[280px] border border-[#00C566]/40 px-4 py-3 flex items-center justify-between"
-            style={{ background: "#0D0D0D" }}
+            style={{ background: "var(--bg-card)" }}
           >
             <div className="flex items-center gap-2">
               <span className="text-[#00C566] text-sm">✓</span>
@@ -240,7 +240,7 @@ function HeroDemo() {
               </span>
             </div>
             <span
-              className="text-[9px] text-[#9999A0]"
+              className="text-[9px] text-[var(--text-secondary)]"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               #146,442,801
@@ -274,7 +274,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen" style={{ background: "#07070E" }}>
+    <div className="min-h-screen" style={{ background: "var(--bg-base)" }}>
       {/* Ticker */}
       <Ticker />
 
@@ -284,7 +284,7 @@ export default function HomePage() {
         <div className="relative z-10">
           {/* Top-left version tag */}
           <div
-            className="mb-12 text-[11px] text-[#9999A0]"
+            className="mb-12 text-[11px] text-[var(--text-secondary)]"
             style={{ fontFamily: "'Space Mono', monospace" }}
           >
             v0.3 · Flow Mainnet · Live
@@ -301,7 +301,7 @@ export default function HomePage() {
                 style={{
                   fontSize: "clamp(56px, 8vw, 96px)",
                   letterSpacing: "-0.03em",
-                  color: "#F5F5F0",
+                  color: "var(--text-primary)",
                 }}
               >
                 The Intent
@@ -341,7 +341,7 @@ export default function HomePage() {
                   onClick={() => {
                     document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
                   }}
-                  className="px-8 py-3 text-sm font-medium text-[#F5F5F0] border border-[#1a1a1a] hover:border-[#0047FF] hover:text-[#0047FF] transition-all duration-150"
+                  className="px-8 py-3 text-sm font-medium text-[var(--text-primary)] border border-[var(--border)] hover:border-[#0047FF] hover:text-[#0047FF] transition-all duration-150"
                   style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                 >
                   View Protocol
@@ -357,7 +357,7 @@ export default function HomePage() {
               className="flex-shrink-0"
             >
               <div
-                className="text-[9px] text-[#9999A0] uppercase tracking-widest mb-4"
+                className="text-[9px] text-[var(--text-secondary)] uppercase tracking-widest mb-4"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 Live demo · Intent lifecycle
@@ -369,69 +369,69 @@ export default function HomePage() {
       </section>
 
       {/* Separator */}
-      <div className="border-t border-[#1a1a1a]" />
+      <div className="border-t border-[var(--border)]" />
 
       {/* Stats bar */}
       <section className="py-12 px-6 sm:px-12">
-        <motion.div {...sectionReveal} className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-0 border border-[#1a1a1a]">
+        <motion.div {...sectionReveal} className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-0 border border-[var(--border)]">
           {/* Active Intents */}
-          <div className="p-6 border-r border-[#1a1a1a]">
+          <div className="p-6 border-r border-[var(--border)]">
             <div
-              className="text-3xl sm:text-4xl font-bold text-[#F5F5F0] mb-1"
+              className="text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-1"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               <CountUp target={stats.openIntents} />
             </div>
-            <div className="text-xs text-[#9999A0]">Active Intents</div>
+            <div className="text-xs text-[var(--text-secondary)]">Active Intents</div>
           </div>
           {/* Total Volume */}
-          <div className="p-6 border-r border-[#1a1a1a]">
+          <div className="p-6 border-r border-[var(--border)]">
             <div
-              className="text-3xl sm:text-4xl font-bold text-[#F5F5F0] mb-1"
+              className="text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-1"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               <CountUp target={Math.round(stats.totalVolumeFlow)} suffix=" FLOW" />
             </div>
-            <div className="text-xs text-[#9999A0]">Total Volume (FLOW)</div>
+            <div className="text-xs text-[var(--text-secondary)]">Total Volume (FLOW)</div>
           </div>
           {/* Best Yield — hardcoded, no on-chain source yet */}
-          <div className="p-6 border-r border-[#1a1a1a] border-t sm:border-t-0 border-[#1a1a1a]">
+          <div className="p-6 border-r border-[var(--border)] border-t sm:border-t-0 border-[var(--border)]">
             <div
-              className="text-3xl sm:text-4xl font-bold text-[#F5F5F0] mb-1"
+              className="text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-1"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               <CountUpDecimal target={42} display={(v) => `${Math.floor(v / 10)}.${v % 10}%`} />
             </div>
-            <div className="text-xs text-[#9999A0]">Best Yield Today</div>
+            <div className="text-xs text-[var(--text-secondary)]">Best Yield Today</div>
           </div>
           {/* Intents Executed */}
-          <div className="p-6 border-t sm:border-t-0 border-[#1a1a1a]">
+          <div className="p-6 border-t sm:border-t-0 border-[var(--border)]">
             <div
-              className="text-3xl sm:text-4xl font-bold text-[#F5F5F0] mb-1"
+              className="text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-1"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               <CountUp target={stats.executedIntents} />
             </div>
-            <div className="text-xs text-[#9999A0]">Intents Executed</div>
+            <div className="text-xs text-[var(--text-secondary)]">Intents Executed</div>
           </div>
         </motion.div>
       </section>
 
       {/* Separator */}
-      <div className="border-t border-[#1a1a1a]" />
+      <div className="border-t border-[var(--border)]" />
 
       {/* How it works */}
       <section id="how-it-works" className="py-20 px-6 sm:px-12">
         <div className="max-w-5xl mx-auto">
           <motion.div {...sectionReveal}>
             <div
-              className="text-[10px] text-[#9999A0] uppercase tracking-widest mb-12"
+              className="text-[10px] text-[var(--text-secondary)] uppercase tracking-widest mb-12"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               Protocol Mechanics
             </div>
 
-            <div className="grid sm:grid-cols-3 gap-0 border border-[#1a1a1a]">
+            <div className="grid sm:grid-cols-3 gap-0 border border-[var(--border)]">
               {[
                 {
                   num: "01",
@@ -451,22 +451,22 @@ export default function HomePage() {
               ].map((step, i) => (
                 <div
                   key={step.num}
-                  className={`p-8 ${i < 2 ? "border-r border-[#1a1a1a]" : ""}`}
+                  className={`p-8 ${i < 2 ? "border-r border-[var(--border)]" : ""}`}
                 >
                   <div
-                    className="text-5xl font-bold text-[#1a1a1a] mb-4"
+                    className="text-5xl font-bold text-[var(--border)] mb-4"
                     style={{ fontFamily: "'Space Mono', monospace" }}
                   >
                     {step.num}
                   </div>
-                  <div className="border-t border-[#1a1a1a] mb-4" />
+                  <div className="border-t border-[var(--border)] mb-4" />
                   <div
-                    className="text-xl font-semibold text-[#F5F5F0] mb-3 whitespace-pre-line"
+                    className="text-xl font-semibold text-[var(--text-primary)] mb-3 whitespace-pre-line"
                     style={{ lineHeight: 1.3 }}
                   >
                     {step.title}
                   </div>
-                  <p className="text-base text-[#9999A0] leading-relaxed">{step.desc}</p>
+                  <p className="text-base text-[var(--text-secondary)] leading-relaxed">{step.desc}</p>
                 </div>
               ))}
             </div>
@@ -475,23 +475,23 @@ export default function HomePage() {
       </section>
 
       {/* Separator */}
-      <div className="border-t border-[#1a1a1a]" />
+      <div className="border-t border-[var(--border)]" />
 
       {/* Strategies */}
       <section className="py-20 px-6 sm:px-12">
         <div className="max-w-5xl mx-auto">
           <motion.div {...sectionReveal}>
             <div
-              className="text-[10px] text-[#9999A0] uppercase tracking-widest mb-4"
+              className="text-[10px] text-[var(--text-secondary)] uppercase tracking-widest mb-4"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               Supported Strategies
             </div>
-            <h2 className="text-3xl font-bold text-[#F5F5F0] mb-12" style={{ letterSpacing: "-0.02em" }}>
+            <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-12" style={{ letterSpacing: "-0.02em" }}>
               What you can do today.
             </h2>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-0 border border-[#1a1a1a]">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-0 border border-[var(--border)]">
               {[
                 {
                   from: "FLOW",
@@ -532,7 +532,7 @@ export default function HomePage() {
               ].map((s, i) => (
                 <div
                   key={s.to}
-                  className={`group p-6 hover:bg-[#0047FF]/5 transition-colors cursor-pointer ${i < 3 ? "border-r border-[#1a1a1a]" : ""}`}
+                  className={`group p-6 hover:bg-[#0047FF]/5 transition-colors cursor-pointer ${i < 3 ? "border-r border-[var(--border)]" : ""}`}
                 >
                   <div
                     className="text-2xl text-[#0047FF] mb-4"
@@ -541,21 +541,21 @@ export default function HomePage() {
                     {s.icon}
                   </div>
                   <div
-                    className="text-xs text-[#9999A0] mb-1"
+                    className="text-xs text-[var(--text-secondary)] mb-1"
                     style={{ fontFamily: "'Space Mono', monospace" }}
                   >
                     {s.from} → {s.to}
                   </div>
-                  <div className="text-sm font-semibold text-[#F5F5F0] mb-2">{s.label}</div>
-                  <p className="text-base text-[#9999A0] mb-4 leading-relaxed">{s.desc}</p>
-                  <div className="border-t border-[#1a1a1a] pt-3 flex items-baseline gap-1">
+                  <div className="text-sm font-semibold text-[var(--text-primary)] mb-2">{s.label}</div>
+                  <p className="text-base text-[var(--text-secondary)] mb-4 leading-relaxed">{s.desc}</p>
+                  <div className="border-t border-[var(--border)] pt-3 flex items-baseline gap-1">
                     <span
-                      className="text-base font-bold text-[#F5F5F0]"
+                      className="text-base font-bold text-[var(--text-primary)]"
                       style={{ fontFamily: "'Space Mono', monospace" }}
                     >
                       {s.rate}
                     </span>
-                    <span className="text-[10px] text-[#9999A0]">{s.rateLabel}</span>
+                    <span className="text-[10px] text-[var(--text-secondary)]">{s.rateLabel}</span>
                   </div>
                   <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     <Link href="/app" className="text-[10px] text-[#0047FF] font-mono hover:underline">
@@ -570,7 +570,7 @@ export default function HomePage() {
       </section>
 
       {/* Separator */}
-      <div className="border-t border-[#1a1a1a]" />
+      <div className="border-t border-[var(--border)]" />
 
       {/* For Solvers */}
       <section
@@ -588,7 +588,7 @@ export default function HomePage() {
                   For Solvers
                 </div>
                 <h2
-                  className="text-4xl font-bold text-[#F5F5F0] mb-4"
+                  className="text-4xl font-bold text-[var(--text-primary)] mb-4"
                   style={{ letterSpacing: "-0.02em", lineHeight: 1.2 }}
                 >
                   Build a solver.
@@ -597,13 +597,13 @@ export default function HomePage() {
                   <br />
                   intent you win.
                 </h2>
-                <p className="text-[#9999A0] text-base leading-relaxed mb-8 max-w-sm">
+                <p className="text-[var(--text-secondary)] text-base leading-relaxed mb-8 max-w-sm">
                   Register as a solver, poll open intents, and submit competitive bids. The winning solver
                   earns the gas escrow fee on every successful execution.
                 </p>
                 <Link href="/solver">
                   <button
-                    className="px-6 py-3 text-sm font-medium text-[#F5F5F0] border border-[#0047FF]/40 hover:border-[#0047FF] hover:bg-[#0047FF]/10 transition-all duration-150"
+                    className="px-6 py-3 text-sm font-medium text-[var(--text-primary)] border border-[#0047FF]/40 hover:border-[#0047FF] hover:bg-[#0047FF]/10 transition-all duration-150"
                     style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                   >
                     Read Solver Docs →
@@ -611,13 +611,13 @@ export default function HomePage() {
                 </Link>
               </div>
 
-              <div className="border border-[#1a1a1a]" style={{ background: "#0D0D0D" }}>
-                <div className="px-4 py-2 border-b border-[#1a1a1a] flex items-center gap-2">
+              <div className="border border-[var(--border)]" style={{ background: "var(--bg-card)" }}>
+                <div className="px-4 py-2 border-b border-[var(--border)] flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
                   <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
                   <span className="w-2.5 h-2.5 rounded-full bg-[#00C566]/50" />
                   <span
-                    className="ml-2 text-[10px] text-[#9999A0]"
+                    className="ml-2 text-[10px] text-[var(--text-secondary)]"
                     style={{ fontFamily: "'Space Mono', monospace" }}
                   >
                     solver.ts
@@ -627,7 +627,7 @@ export default function HomePage() {
                   className="p-5 text-[11px] leading-relaxed overflow-x-auto"
                   style={{
                     fontFamily: "'Space Mono', monospace",
-                    color: "#F5F5F0",
+                    color: "var(--text-primary)",
                   }}
                 >
                   <code>{`import { FlowIntentsClient } from '@flowintents/sdk'
@@ -653,43 +653,43 @@ for (const intent of intents
       </section>
 
       {/* Separator */}
-      <div className="border-t border-[#1a1a1a]" />
+      <div className="border-t border-[var(--border)]" />
 
       {/* Footer */}
       <footer className="py-12 px-6 sm:px-12">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8">
           <div>
             <div
-              className="text-sm font-bold tracking-widest text-[#F5F5F0] mb-2"
+              className="text-sm font-bold tracking-widest text-[var(--text-primary)] mb-2"
               style={{ fontFamily: "'Space Mono', monospace" }}
             >
               FLOWINTENTS
             </div>
-            <div className="text-xs text-[#9999A0]">
+            <div className="text-xs text-[var(--text-secondary)]">
               Deployed on Flow Mainnet · Contract: 0xc65395858a38d8ff
             </div>
           </div>
 
           <div className="flex items-center gap-8">
-            <Link href="/app" className="text-xs text-[#9999A0] hover:text-[#F5F5F0] transition-colors font-mono">
+            <Link href="/app" className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors font-mono">
               App
             </Link>
-            <Link href="/solver" className="text-xs text-[#9999A0] hover:text-[#F5F5F0] transition-colors font-mono">
+            <Link href="/solver" className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors font-mono">
               Solver
             </Link>
             <a
               href="https://github.com/your-repo"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-[#9999A0] hover:text-[#F5F5F0] transition-colors font-mono"
+              className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors font-mono"
             >
               GitHub
             </a>
           </div>
         </div>
-        <div className="max-w-5xl mx-auto mt-8 pt-8 border-t border-[#1a1a1a]">
+        <div className="max-w-5xl mx-auto mt-8 pt-8 border-t border-[var(--border)]">
           <p
-            className="text-[10px] text-[#9999A0]"
+            className="text-[10px] text-[var(--text-secondary)]"
             style={{ fontFamily: "'Space Mono', monospace" }}
           >
             © 2026 FlowIntents · Built for HackaFlow 2026
