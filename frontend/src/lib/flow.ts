@@ -801,22 +801,137 @@ export interface LiveEvent {
   transactionId: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: Record<string, any>;
+  /** Which marketplace emitted the event (for dedup with snapshots). */
+  marketplaceVersion?: "v3" | "v4";
+  /** UFix64 unix seconds from on-chain intent (script snapshot rows). */
+  createdAtSec?: number;
+  /** Built from executeScript(getIntent*) — no transaction id. */
+  fromSnapshot?: boolean;
 }
 
-const LIVE_EVENT_SOURCES: { name: LiveEventType; contract: string }[] = [
-  { name: "IntentCreated",    contract: "IntentMarketplaceV0_4" },
-  { name: "BidSubmitted",     contract: "BidManagerV0_4" },
-  { name: "WinnerSelected",   contract: "BidManagerV0_4" },
-  { name: "IntentCompleted",  contract: "IntentMarketplaceV0_4" },
-  { name: "IntentCancelled",  contract: "IntentMarketplaceV0_4" },
+const LIVE_EVENT_SOURCES: { name: LiveEventType; contract: string; version: "v3" | "v4" }[] = [
+  { name: "IntentCreated",    contract: "IntentMarketplaceV0_4", version: "v4" },
+  { name: "BidSubmitted",     contract: "BidManagerV0_4",        version: "v4" },
+  { name: "WinnerSelected",   contract: "BidManagerV0_4",        version: "v4" },
+  { name: "IntentCompleted",  contract: "IntentMarketplaceV0_4", version: "v4" },
+  { name: "IntentCancelled",  contract: "IntentMarketplaceV0_4", version: "v4" },
+  { name: "IntentCreated",    contract: "IntentMarketplaceV0_3", version: "v3" },
+  { name: "BidSubmitted",     contract: "BidManagerV0_3",        version: "v3" },
+  { name: "WinnerSelected",   contract: "BidManagerV0_3",        version: "v3" },
+  { name: "IntentCompleted",  contract: "IntentMarketplaceV0_3", version: "v3" },
+  { name: "IntentCancelled",  contract: "IntentMarketplaceV0_3", version: "v3" },
 ];
+
+const INTENT_FETCH_BATCH = 12;
+
+/**
+ * Full intent history on-chain: runs the same Cadence as GET_INTENT_FULL_SCRIPT
+ * for ids 0 .. totalIntents-1 on IntentMarketplaceV0_3 (mirrors cadence/scripts/getIntent*.cdc style reads).
+ */
+export async function getAllIntentsFromChainV03(): Promise<Intent[]> {
+  const total = await getTotalIntents();
+  if (!total || total < 1) return [];
+  const out: Intent[] = [];
+  for (let start = 0; start < total; start += INTENT_FETCH_BATCH) {
+    const end = Math.min(start + INTENT_FETCH_BATCH, total);
+    const batch = await Promise.all(
+      Array.from({ length: end - start }, (_, j) => getIntent(start + j))
+    );
+    for (const row of batch) if (row) out.push(row);
+  }
+  return out;
+}
+
+/**
+ * Full intent history for IntentMarketplaceV0_4 (GET_INTENT_FULL_V04_SCRIPT per id).
+ */
+export async function getAllIntentsFromChainV04(): Promise<Intent[]> {
+  const total = await getTotalIntentsV04();
+  if (!total || total < 1) return [];
+  const out: Intent[] = [];
+  for (let start = 0; start < total; start += INTENT_FETCH_BATCH) {
+    const end = Math.min(start + INTENT_FETCH_BATCH, total);
+    const batch = await Promise.all(
+      Array.from({ length: end - start }, (_, j) => getIntentV04(start + j))
+    );
+    for (const row of batch) if (row) out.push(row);
+  }
+  return out;
+}
+
+/** Turn script-read intent into a synthetic IntentCreated row for the live feed. */
+export function intentToSnapshotLiveEvent(version: "v3" | "v4", intent: Intent): LiveEvent {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data: Record<string, any> = {
+    id: intent.id,
+    principalAmount: intent.principalAmount,
+    intentType: intent.intentType,
+    durationDays: intent.durationDays,
+    owner: intent.intentOwner,
+    status: intent.status,
+    targetAPY: intent.targetAPY,
+  };
+  if (version === "v3") {
+    data.minAmountOut = intent.minAmountOut;
+    data.maxFeeBPS = intent.maxFeeBPS;
+  } else {
+    data.tokenOut = intent.tokenOut ?? "";
+  }
+
+  return {
+    id: `snapshot-${version}-${intent.id}`,
+    eventType: "IntentCreated",
+    blockHeight: 0,
+    transactionId: "",
+    data,
+    marketplaceVersion: version,
+    createdAtSec: intent.createdAt,
+    fromSnapshot: true,
+  };
+}
+
+/**
+ * Merge Access API events with full on-chain intent list so older intents (outside event lookback)
+ * still appear. When a real IntentCreated exists for the same marketplace + id, the snapshot is dropped.
+ */
+export function mergeLiveEventsWithIntentSnapshots(
+  events: LiveEvent[],
+  v3Intents: Intent[],
+  v4Intents: Intent[]
+): LiveEvent[] {
+  const snapshotByKey = new Map<string, LiveEvent>();
+  for (const intent of v3Intents) {
+    snapshotByKey.set(`v3-${intent.id}`, intentToSnapshotLiveEvent("v3", intent));
+  }
+  for (const intent of v4Intents) {
+    snapshotByKey.set(`v4-${intent.id}`, intentToSnapshotLiveEvent("v4", intent));
+  }
+
+  for (const e of events) {
+    if (e.eventType !== "IntentCreated") continue;
+    const id = e.data?.id;
+    const ver = e.marketplaceVersion;
+    if (id != null && ver != null) {
+      snapshotByKey.delete(`${ver}-${id}`);
+    }
+  }
+
+  return [...events, ...snapshotByKey.values()].sort(
+    (a, b) => liveEventSortKey(b) - liveEventSortKey(a)
+  );
+}
+
+/** Sort key for live feed rows (events by approximate time, snapshots by createdAt). */
+export function liveEventSortKey(e: LiveEvent): number {
+  return e.createdAtSec != null ? e.createdAtSec : e.blockHeight * 1.2;
+}
 
 export async function getRecentEvents(lookbackBlocks = 1000): Promise<LiveEvent[]> {
   const currentHeight = await getCurrentBlockHeight();
   const startBlock = Math.max(1, currentHeight - lookbackBlocks);
 
   const allResults = await Promise.all(
-    LIVE_EVENT_SOURCES.map(async ({ name, contract }) => {
+    LIVE_EVENT_SOURCES.map(async ({ name, contract, version }) => {
       const raw = await queryEvents(
         `A.c65395858a38d8ff.${contract}.${name}`,
         startBlock,
@@ -829,11 +944,13 @@ export async function getRecentEvents(lookbackBlocks = 1000): Promise<LiveEvent[
           const parsed = JSON.parse(payloadStr);
           const data = parseCDC(parsed) ?? {};
           return {
-            id: `${e.block_height}-${e.transaction_id}-${i}`,
+            id: `${version}-${e.block_height}-${e.transaction_id}-${i}`,
             eventType: name,
             blockHeight: parseInt(e.block_height, 10),
             transactionId: e.transaction_id as string,
             data,
+            marketplaceVersion: version,
+            fromSnapshot: false,
           } as LiveEvent;
         } catch {
           return null;

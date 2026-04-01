@@ -3,7 +3,17 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, ExternalLink } from "lucide-react";
-import { getRecentEvents, type LiveEvent, type LiveEventType } from "@/lib/flow";
+import {
+  getRecentEvents,
+  mergeLiveEventsWithIntentSnapshots,
+  getAllIntentsFromChainV03,
+  getAllIntentsFromChainV04,
+  liveEventSortKey,
+  intentStatusLabel,
+  type Intent,
+  type LiveEvent,
+  type LiveEventType,
+} from "@/lib/flow";
 import { cn } from "@/lib/utils";
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -50,16 +60,38 @@ function blocksAgo(eventBlock: number, currentBlock: number): string {
   return `${(diffSecs / 3600).toFixed(1)}h ago`;
 }
 
+function agoFromUnixSeconds(createdAtSec: number): string {
+  if (!createdAtSec || isNaN(createdAtSec)) return "";
+  const diffSecs = Math.floor(Date.now() / 1000 - createdAtSec);
+  if (diffSecs < 60) return `${diffSecs}s ago`;
+  if (diffSecs < 3600) return `${Math.floor(diffSecs / 60)}m ago`;
+  if (diffSecs < 86400) return `${(diffSecs / 3600).toFixed(1)}h ago`;
+  return `${(diffSecs / 86400).toFixed(1)}d ago`;
+}
+
 function describeEvent(evt: LiveEvent): { title: string; detail: string } {
   const d = evt.data;
   switch (evt.eventType) {
-    case "IntentCreated":
+    case "IntentCreated": {
+      const st = d.status != null ? intentStatusLabel(Number(d.status)) : null;
+      const statusSuffix = st ? ` · ${st}` : "";
+      if (d.intentType === 0) {
+        return {
+          title: `Intent #${d.id ?? "?"} — ${fmtFlow(d.principalAmount)} FLOW`,
+          detail: `Yield · ${d.durationDays ?? "—"}d${statusSuffix}`,
+        };
+      }
+      const out =
+        d.tokenOut && String(d.tokenOut).length > 2
+          ? ` → ${String(d.tokenOut).slice(0, 10)}…`
+          : d.minAmountOut != null
+            ? ` · min out ${fmtFlow(d.minAmountOut)}`
+            : "";
       return {
         title: `Intent #${d.id ?? "?"} — ${fmtFlow(d.principalAmount)} FLOW`,
-        detail: d.intentType === 0
-          ? `Yield · ${d.durationDays}d`
-          : `Swap · ${d.durationDays}d`,
+        detail: `Swap · ${d.durationDays ?? "—"}d${out}${statusSuffix}`,
       };
+    }
     case "BidSubmitted":
       return {
         title: `Bid #${d.bidID ?? "?"} on Intent #${d.intentID ?? "?"}`,
@@ -107,6 +139,7 @@ export default function LivePage() {
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const seenIds = useRef<Set<string>>(new Set());
   const lastPollBlock = useRef(0);
+  const snapshotIntentsRef = useRef<{ v3: Intent[]; v4: Intent[] } | null>(null);
 
   const load = useCallback(async (isManual = false) => {
     if (isManual) setRefreshing(true);
@@ -119,13 +152,30 @@ export default function LivePage() {
         setCurrentBlock(block);
       }
 
-      // On subsequent polls, only look at new blocks
+      // On subsequent polls, only look at new blocks (wider first load for recent events)
       const lookback = lastPollBlock.current > 0
         ? Math.max(100, block - lastPollBlock.current + 10)
-        : 10000;
+        : 200_000;
       lastPollBlock.current = block;
 
-      const fresh = await getRecentEvents(lookback);
+      let v3: Intent[] = snapshotIntentsRef.current?.v3 ?? [];
+      let v4: Intent[] = snapshotIntentsRef.current?.v4 ?? [];
+      if (snapshotIntentsRef.current === null || isManual) {
+        try {
+          const [a, b] = await Promise.all([
+            getAllIntentsFromChainV03(),
+            getAllIntentsFromChainV04(),
+          ]);
+          snapshotIntentsRef.current = { v3: a, v4: b };
+          v3 = a;
+          v4 = b;
+        } catch {
+          snapshotIntentsRef.current = { v3: [], v4: [] };
+        }
+      }
+
+      const chainEvents = await getRecentEvents(lookback);
+      const fresh = mergeLiveEventsWithIntentSnapshots(chainEvents, v3, v4);
 
       setEvents((prev) => {
         // Merge: new events first, deduplicate by id
@@ -143,7 +193,7 @@ export default function LivePage() {
           setTimeout(() => setNewIds(new Set()), 2000);
         }
         return Array.from(prevMap.values())
-          .sort((a, b) => b.blockHeight - a.blockHeight)
+          .sort((a, b) => liveEventSortKey(b) - liveEventSortKey(a))
           .slice(0, 200); // keep last 200
       });
     } catch (err) {
@@ -325,7 +375,7 @@ export default function LivePage() {
                 No Activity
               </div>
               <p className="text-sm text-[#444440]">
-                No events found in the last ~1000 blocks
+                No protocol events or on-chain intents to show yet
               </p>
             </div>
           ) : (
@@ -384,18 +434,33 @@ export default function LivePage() {
                             className="text-[10px] text-[#444440]"
                             style={{ fontFamily: "'Space Mono', monospace" }}
                           >
-                            {currentBlock > 0 ? blocksAgo(evt.blockHeight, currentBlock) : `#${evt.blockHeight}`}
+                            {evt.fromSnapshot && evt.createdAtSec
+                              ? agoFromUnixSeconds(evt.createdAtSec)
+                              : currentBlock > 0
+                                ? blocksAgo(evt.blockHeight, currentBlock)
+                                : evt.blockHeight > 0
+                                  ? `#${evt.blockHeight}`
+                                  : "on-chain"}
                           </div>
-                          <a
-                            href={`${FLOW_SCAN}/${evt.transactionId}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[10px] text-[#333330] hover:text-[#0047FF] transition-colors mt-0.5"
-                            style={{ fontFamily: "'Space Mono', monospace" }}
-                          >
-                            {shortTx(evt.transactionId)}
-                            <ExternalLink className="w-2.5 h-2.5" />
-                          </a>
+                          {evt.transactionId ? (
+                            <a
+                              href={`${FLOW_SCAN}/${evt.transactionId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[10px] text-[#333330] hover:text-[#0047FF] transition-colors mt-0.5"
+                              style={{ fontFamily: "'Space Mono', monospace" }}
+                            >
+                              {shortTx(evt.transactionId)}
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          ) : (
+                            <div
+                              className="text-[10px] text-[#333330] mt-0.5"
+                              style={{ fontFamily: "'Space Mono', monospace" }}
+                            >
+                              script index
+                            </div>
+                          )}
                         </div>
                       </div>
                     </motion.div>
@@ -412,7 +477,8 @@ export default function LivePage() {
             className="text-center mt-6 text-[10px] text-[#2a2a2a]"
             style={{ fontFamily: "'Space Mono', monospace" }}
           >
-            Showing last ~1000 blocks · refreshes every {POLL_INTERVAL_MS / 1000}s
+            Intents: full V0_3 + V0_4 on-chain index via Cadence scripts · Events: recent blocks ·
+            refreshes every {POLL_INTERVAL_MS / 1000}s (pull to refresh updates intent index)
           </div>
         )}
       </div>
