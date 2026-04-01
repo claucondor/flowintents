@@ -12,7 +12,8 @@ const navLinks = [
   { href: "/", label: "Home" },
   { href: "/app", label: "Create Intent" },
   { href: "/live", label: "Live" },
-  { href: "/solver", label: "Solver Docs" },
+  { href: "/docs", label: "Docs" },
+  { href: "/solver", label: "Solver" },
 ];
 
 export function Navbar() {
