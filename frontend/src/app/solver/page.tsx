@@ -5,61 +5,98 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 
 const CONTRACTS = [
-  { name: "IntentMarketplaceV0_3", address: "0xc65395858a38d8ff", note: "Intent creation + lifecycle" },
-  { name: "BidManagerV0_3",        address: "0xc65395858a38d8ff", note: "Bid submission + winner selection" },
-  { name: "IntentExecutorV0_3",    address: "0xc65395858a38d8ff", note: "Intent execution + gas escrow payout" },
-  { name: "FlowIntentsComposerV4", address: "0x5cc14D3509639a819f4e8f796128Fcc1C9576D95", note: "EVM strategy executor" },
+  { name: "IntentMarketplaceV0_4", address: "0xc65395858a38d8ff", note: "Intent creation + lifecycle (user-executed model)" },
+  { name: "BidManagerV0_4",        address: "0xc65395858a38d8ff", note: "Bid submission + winner selection" },
+  { name: "IntentExecutorV0_4",    address: "0xc65395858a38d8ff", note: "User executes strategy + commission payout" },
+  { name: "FlowIntentsComposerV5", address: "0x34BfEcBB547875a3bBA86521a56B06f8197f2913", note: "Permissionless EVM strategy executor (delta sweep)" },
+  { name: "SolverRegistryV0_1",    address: "0xc65395858a38d8ff", note: "Solver registration + ERC-8004 identity" },
 ];
 
 const EVENTS = [
-  { name: "IntentMarketplaceV0_3.IntentCreated",   desc: "A new intent was posted. Fields: id, intentOwner, principalAmount, intentType, targetAPY, minAmountOut." },
-  { name: "BidManagerV0_3.BidSubmitted",           desc: "A solver submitted a bid. Fields: bidID, intentID, solverAddress, offeredAPY, offeredAmountOut, maxGasBid, score." },
-  { name: "BidManagerV0_3.WinnerSelected",         desc: "A winner was chosen. Fields: intentID, winningBidID, solverAddress. Winning solver should call executeIntent immediately." },
-  { name: "IntentMarketplaceV0_3.IntentCompleted", desc: "Execution succeeded. Fields: id, owner, finalAmount." },
+  { name: "IntentMarketplaceV0_4.IntentCreated",   desc: "A new intent was posted. Fields: id, owner, intentType, principalAmount, tokenOut, deliverySide, durationDays." },
+  { name: "BidManagerV0_4.BidSubmitted",           desc: "A solver submitted a bid. Fields: bidID, intentID, solverAddress, offeredAPY, offeredAmountOut, maxGasBid, score." },
+  { name: "BidManagerV0_4.WinnerSelected",         desc: "User selected a winner. Fields: intentID, winningBidID, solverAddress. User will execute the strategy." },
+  { name: "IntentMarketplaceV0_4.IntentCompleted", desc: "User executed successfully. Fields: id, owner." },
 ];
 
 const STRATEGIES = [
   {
     id: "ankr-stake",
     label: "ankr-stake",
-    title: "Ankr Liquid Staking",
+    title: "Ankr Liquid Staking (Bot A)",
     color: "#00C566",
-    desc: "Stake FLOW into Ankr's liquid staking pool. Produces aFLOWEVMb cert tokens. Best for YIELD intents.",
-    snippet: `// Encode an Ankr staking strategy
-const batch = client.encodeANKRStakeStrategy(
-  intent.principalAmount, // FLOW to stake
-  myEvmAddress,           // receives aFLOWEVMb
+    desc: "Stake FLOW into Ankr's liquid staking pool. Produces aFLOWEVMb cert tokens (~4.2% APY). Shares stay in user's COA.",
+    snippet: `// Ankr staking — 1 step + sweep dummy
+const batch = encodeANKRStakeStrategy(
+  intent.principalAmount, COMPOSER_V5
 )
-
-await client.submitBid({
+await submitBid({
   intentID: intent.id,
-  offeredAPY: intent.targetAPY + 1.5, // offer 1.5% above target
+  offeredAPY: 4.2,
   strategy: 'ankr-stake',
   maxGasBid: 0.001,
   encodedBatch: batch,
 })`,
   },
   {
-    id: "punchswap-v2",
-    label: "punchswap-v2",
-    title: "PunchSwap UniV2 Swap",
-    color: "#0047FF",
-    desc: "Wrap FLOW → WFLOW → swap for stgUSDC via PunchSwap's UniV2 router. For SWAP intents.",
-    snippet: `// Encode a PunchSwap strategy
-const minOut = Math.floor((intent.minAmountOut ?? 0) * 1.02)
-const batch = client.encodeWrapAndSwapStrategy(
-  intent.principalAmount, // FLOW to wrap
-  intent.principalAmount, // WFLOW to swap (all of it)
-  TOKENS.stgUSDC,         // output token
-  myEvmAddress,           // receives stgUSDC
-  minOut,                 // min output (2% better than user's floor)
+    id: "alphayield-wflow-vault",
+    label: "alphayield-wflow-vault",
+    title: "AlphaYield WFLOW Vault (Bot B)",
+    color: "#F5C542",
+    desc: "Deposit into AlphaYield's ERC-4626 vault (ankrFLOW looping strategy on MORE Markets). ~19.9% APY. User receives syWFLOWv shares.",
+    snippet: `// AlphaYield vault — wrap + approve + deposit
+const batch = encodeAlphaYieldStrategy(
+  intent.principalAmount, COMPOSER_V5
 )
-
-await client.submitBid({
+await submitBid({
   intentID: intent.id,
-  offeredAmountOut: minOut,
-  strategy: 'punchswap-v2',
+  offeredAPY: 19.9,
+  strategy: 'alphayield-wflow-vault',
+  maxGasBid: 0.002,
+  encodedBatch: batch,
+})`,
+  },
+  {
+    id: "punchswap-direct",
+    label: "wrap-and-swap-punchswap",
+    title: "PunchSwap Direct Swap (Bot A)",
+    color: "#0047FF",
+    desc: "Wrap FLOW → WFLOW → swap for stgUSDC via PunchSwap V2 router. Direct route, best price for stgUSDC.",
+    snippet: `// Direct swap — quote PunchSwap, encode batch
+const quote = await getPunchSwapQuote(amount, TOKENS.stgUSDC)
+const batch = encodeWrapAndSwapStrategy(
+  amount, amount, TOKENS.stgUSDC,
+  COMPOSER_V5,  // swap output to Composer for sweep
+  BigInt(Math.floor(Number(quote) * 0.95)),
+)
+await submitBid({
+  intentID: intent.id,
+  offeredAmountOut: Number(quote) / 1e6,
+  strategy: 'wrap-and-swap-punchswap',
   maxGasBid: 0.001,
+  encodedBatch: batch,
+})`,
+  },
+  {
+    id: "multihop-swap",
+    label: "multihop-wflow-usdf-stgusdc",
+    title: "PunchSwap Multi-Hop Swap (Bot B)",
+    color: "#5B8EFF",
+    desc: "Multi-hop: WFLOW → USDF → stgUSDC via PunchSwap. Alternative route through USDF (PYUSD) liquidity.",
+    snippet: `// Multi-hop swap — WFLOW → USDF → stgUSDC
+const quote = await getPunchSwapMultiHopQuote(
+  amount, TOKENS.USDF, TOKENS.stgUSDC
+)
+const batch = encodeMultiHopSwapStrategy(
+  amount, TOKENS.USDF, TOKENS.stgUSDC,
+  COMPOSER_V5,
+  BigInt(Math.floor(Number(quote) * 0.95)),
+)
+await submitBid({
+  intentID: intent.id,
+  offeredAmountOut: Number(quote) / 1e6,
+  strategy: 'multihop-wflow-usdf-stgusdc',
+  maxGasBid: 0.002,
   encodedBatch: batch,
 })`,
   },
@@ -112,10 +149,10 @@ export default function SolverDocsPage() {
           </div>
           <div className="border border-[#1a1a1a]" style={{ background: "#0D0D0D" }}>
             {[
-              { step: "01", title: "Listen for intents", desc: "Poll getOpenIntents() or subscribe to IntentCreated events. Every new intent is an opportunity." },
-              { step: "02", title: "Submit a bid", desc: "Call BidManagerV0_3.submitBid() with your offered terms (APY or amountOut) and an ABI-encoded strategy batch. Lower gas bids and better terms score higher." },
-              { step: "03", title: "Watch for WinnerSelected", desc: "When the user (or the auto-selector) picks a winner, a WinnerSelected event fires. Check if your address won." },
-              { step: "04", title: "Execute & collect", desc: "Call IntentExecutorV0_3.executeIntentV2(). The contract runs your encoded EVM strategy and pays you the full gas escrow." },
+              { step: "01", title: "Listen for intents", desc: "Poll IntentMarketplaceV0_4.getOpenIntents() or subscribe to IntentCreated events. Each intent declares what the user wants (swap or yield) and how much FLOW." },
+              { step: "02", title: "Submit a bid", desc: "Call BidManagerV0_4.submitBid() with your offered terms (APY or amountOut) and an ABI-encoded strategy batch. Solvers compete on price, strategy quality, and reputation." },
+              { step: "03", title: "User selects winner", desc: "The intent owner reviews bids and selects the best. Your score = (offered terms x reputation x 0.7) + (gas efficiency x 0.3)." },
+              { step: "04", title: "User executes, you get paid", desc: "The user signs and executes the transaction using their own COA. Your strategy batch runs on-chain. Commission escrow is paid to you automatically." },
             ].map((item, i, arr) => (
               <div
                 key={item.step}
